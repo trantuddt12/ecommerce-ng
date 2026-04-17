@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
     update: (id: string | number) => `/brands/update/${id}`,
     byId: (id: string | number) => `/brands/${id}`,
     delete: (id: string | number) => `/brands/${id}`,
+    image: (id: string | number) => `/brands/${id}/image`,
   },
   category: {
     list: '/categories',
@@ -50,6 +51,9 @@ export const API_ENDPOINTS = {
     move: (id: string | number) => `/categories/${id}/move`,
     reorder: '/categories/reorder',
     merge: '/categories/merge',
+    images: (id: string | number) => `/categories/${id}/images`,
+    deleteImage: (id: string | number, imageId: string | number) => `/categories/${id}/images/${imageId}`,
+    thumbnail: (id: string | number, imageId: string | number) => `/categories/${id}/images/${imageId}/thumbnail`,
   },
   product: {
     list: '/products',

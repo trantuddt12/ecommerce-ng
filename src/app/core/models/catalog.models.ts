@@ -4,6 +4,14 @@ export interface Brand {
   description: string;
   generic: boolean;
   slug: string;
+  imageUrl?: string | null;
+  image?: ImageAsset | null;
+}
+
+export interface ImageAsset {
+  id: number;
+  url: string;
+  thumbnail: boolean;
 }
 
 export interface BrandCreateRequest {
@@ -46,6 +54,7 @@ export interface Category {
   visible: boolean;
   assignable: boolean;
   imageUrl?: string | null;
+  galleryImages?: ImageAsset[];
   iconUrl?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
