@@ -15,6 +15,14 @@ export interface ApiEnvelope<T> {
   page?: unknown;
 }
 
+export function unwrapApiEnvelope<T>(response: T | ApiEnvelope<T>): T {
+  if (response && typeof response === 'object' && 'data' in response) {
+    return response.data;
+  }
+
+  return response;
+}
+
 export interface AuthSession {
   accessToken: string | null;
   isAuthenticated: boolean;

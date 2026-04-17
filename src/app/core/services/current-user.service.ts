@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { catchError, map, of, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
+import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
 import { BackendPermission, BackendUser, CurrentUser } from '../models/user.models';
 import { AuthStore } from '../state/auth.store';
 import { SessionService } from './session.service';
@@ -18,10 +19,6 @@ interface JwtPayload {
   scope?: string;
 }
 
-interface ApiEnvelope<T> {
-  data: T;
-}
-
 @Injectable({ providedIn: 'root' })
 export class CurrentUserService {
   constructor(
@@ -31,29 +28,15 @@ export class CurrentUserService {
   ) {}
 
   loadCurrentUser() {
-  return this.api.get<BackendUser | ApiEnvelope<BackendUser>>(API_ENDPOINTS.auth.me).pipe(
-
-    tap(res => {
-      console.log('API raw:', res);
-    }),
-
-    map((response) => {
-      return this.unwrapUserResponse(response);
-    }),
-
-    map((response) => {
-      return this.mapCurrentUser(response);
-    }),
-
-    catchError((err) => {
-      return of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()));
-    }),
-
-    tap((user) => {
-      this.authStore.setCurrentUser(user);
-    }),
-  );
-}
+    return this.api.get<BackendUser | ApiEnvelope<BackendUser>>(API_ENDPOINTS.auth.me).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+      map((response) => this.mapCurrentUser(response)),
+      catchError(() => of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()))),
+      tap((user) => {
+        this.authStore.setCurrentUser(user);
+      }),
+    );
+  }
 
   setCurrentUserFromToken(token: string | null): void {
     this.authStore.setCurrentUser(this.mapCurrentUserFromToken(token));
@@ -85,15 +68,6 @@ export class CurrentUserService {
       permissions: [...permissions],
     };
   }
-
-  private unwrapUserResponse(response: BackendUser | ApiEnvelope<BackendUser>): BackendUser {
-    if (this.isApiEnvelope(response)) {
-      return response.data;
-    }
-
-    return response;
-  }
-
   private mapCurrentUserFromToken(token: string | null): CurrentUser | null {
     const payload = this.parseJwtPayload(token);
 
@@ -160,9 +134,5 @@ export class CurrentUserService {
     return values
       .map((value) => (typeof value === 'string' ? value : value.name ?? ''))
       .filter(Boolean);
-  }
-
-  private isApiEnvelope(response: BackendUser | ApiEnvelope<BackendUser>): response is ApiEnvelope<BackendUser> {
-    return Boolean(response && typeof response === 'object' && 'data' in response);
   }
 }

@@ -53,6 +53,21 @@ export class SidebarComponent {
     { label: 'Categories', path: APP_ROUTES.categories, permissions: ['CATEGORY_MANAGE', 'CATEGORY_VIEW'] },
     { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
     { label: 'Attributes', path: APP_ROUTES.attributes, permissions: ['ATTRIBUTE_MANAGE', 'ATTRIBUTE_VIEW'] },
+    {
+      label: 'Operations',
+      path: APP_ROUTES.operations,
+      permissions: [
+        'BRAND_VIEW',
+        'BRAND_MANAGE',
+        'CATEGORY_VIEW',
+        'CATEGORY_MANAGE',
+        'PRODUCT_VIEW',
+        'PRODUCT_CREATE',
+        'PRODUCT_UPDATE',
+        'ATTRIBUTE_VIEW',
+        'ATTRIBUTE_MANAGE',
+      ],
+    },
     { label: 'Search', path: APP_ROUTES.search, permissions: ['BRAND_VIEW'] },
   ];
 

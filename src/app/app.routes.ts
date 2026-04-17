@@ -10,6 +10,7 @@ import { VerifyOtpPage } from './features/auth/pages/verify-otp.page';
 import { AttributesPage } from './features/catalog/attributes/attributes.page';
 import { BrandsPage } from './features/catalog/brands/brands.page';
 import { CategoriesPage } from './features/catalog/categories/categories.page';
+import { OperationsPage } from './features/catalog/operations/operations.page';
 import { ProductsPage } from './features/catalog/products/products.page';
 import { DashboardPage } from './features/dashboard/dashboard.page';
 import { RolesPage } from './features/management/roles/roles.page';
@@ -80,6 +81,24 @@ export const routes: Routes = [
         component: AttributesPage,
         canActivate: [permissionGuard],
         data: { permissions: ['ATTRIBUTE_VIEW', 'ATTRIBUTE_MANAGE'] },
+      },
+      {
+        path: 'catalog/operations',
+        component: OperationsPage,
+        canActivate: [permissionGuard],
+        data: {
+          permissions: [
+            'BRAND_VIEW',
+            'BRAND_MANAGE',
+            'CATEGORY_VIEW',
+            'CATEGORY_MANAGE',
+            'PRODUCT_VIEW',
+            'PRODUCT_CREATE',
+            'PRODUCT_UPDATE',
+            'ATTRIBUTE_VIEW',
+            'ATTRIBUTE_MANAGE',
+          ],
+        },
       },
       {
         path: 'catalog/search',

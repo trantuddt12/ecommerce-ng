@@ -22,7 +22,40 @@ export class BaseApiService {
       .pipe(timeout(this.config.requestTimeoutMs));
   }
 
-  post<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
+  post<T>(
+    path: string,
+    body: unknown,
+    source: 'api' | 'search' = 'api',
+    params?: Record<string, QueryParamValue>,
+  ): Observable<T> {
+    return this.http
+      .post<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(params))
+      .pipe(timeout(this.config.requestTimeoutMs));
+  }
+
+  patch<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
+    return this.http.patch<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  }
+
+  delete<T>(path: string, source: 'api' | 'search' = 'api'): Observable<T> {
+    return this.http.delete<T>(this.apiUrlBuilder.build(path, source)).pipe(timeout(this.config.requestTimeoutMs));
+  }
+
+  postFormData<T>(path: string, body: FormData, source: 'api' | 'search' = 'api'): Observable<T> {
     return this.http.post<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  }
+
+  postText(
+    path: string,
+    body: unknown,
+    params?: Record<string, QueryParamValue>,
+    source: 'api' | 'search' = 'api',
+  ): Observable<string> {
+    return this.http
+      .post(this.apiUrlBuilder.build(path, source), body, {
+        ...this.httpOptionsFactory.create(params),
+        responseType: 'text',
+      })
+      .pipe(timeout(this.config.requestTimeoutMs));
   }
 }

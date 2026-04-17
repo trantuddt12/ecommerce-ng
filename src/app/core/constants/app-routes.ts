@@ -6,5 +6,6 @@ export const APP_ROUTES = {
   categories: '/admin/catalog/categories',
   products: '/admin/catalog/products',
   attributes: '/admin/catalog/attributes',
+  operations: '/admin/catalog/operations',
   search: '/admin/catalog/search',
 } as const;
