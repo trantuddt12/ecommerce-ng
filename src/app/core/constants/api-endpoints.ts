@@ -55,6 +55,8 @@ export const API_ENDPOINTS = {
     list: '/products',
     create: '/products',
     byId: (id: string | number) => `/products/${id}`,
+    update: (id: string | number) => `/products/${id}`,
+    status: (id: string | number) => `/products/${id}/status`,
   },
   attribute: {
     list: '/attributes',

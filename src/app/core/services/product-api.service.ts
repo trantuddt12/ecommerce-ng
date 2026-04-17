@@ -3,29 +3,35 @@ import { map, Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
-import { Product, ProductCreateRequest, ProductFilter, ProductResponse } from '../models/catalog.models';
+import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, ProductFilter } from '../models/catalog.models';
 import { QueryParamValue } from '../utils/query-params.util';
 
 @Injectable({ providedIn: 'root' })
 export class ProductApiService {
   private readonly baseApi = inject(BaseApiService);
 
-  list(filters?: ProductFilter): Observable<Product[]> {
-    return this.baseApi.get<Product[] | ApiEnvelope<Product[]>>(API_ENDPOINTS.product.list, this.toQueryParams(filters)).pipe(
+  list(filters?: ProductFilter): Observable<AdminProductListItem[]> {
+    return this.baseApi.get<AdminProductListItem[] | ApiEnvelope<AdminProductListItem[]>>(API_ENDPOINTS.product.list, this.toQueryParams(filters)).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
   }
 
-  getById(id: number): Observable<Product> {
-    return this.baseApi.get<Product | ApiEnvelope<Product>>(API_ENDPOINTS.product.byId(id)).pipe(
+  getById(id: number): Observable<AdminProductDetail> {
+    return this.baseApi.get<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.byId(id)).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
   }
 
-  create(request: ProductCreateRequest, files: File[]): Observable<ProductResponse> {
-    return this.baseApi.postFormData<ProductResponse>(
+  create(request: AdminProductUpsertRequest, files: File[]): Observable<AdminProductDetail> {
+    return this.baseApi.postFormData<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(
       API_ENDPOINTS.product.create,
       createProductFormData(request, files),
+    ).pipe(map((response) => unwrapApiEnvelope(response)));
+  }
+
+  update(id: number, request: AdminProductUpsertRequest): Observable<AdminProductDetail> {
+    return this.baseApi.patch<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.update(id), request).pipe(
+      map((response) => unwrapApiEnvelope(response)),
     );
   }
 
@@ -49,7 +55,7 @@ function toNullableNumber(value: number | null | undefined): QueryParamValue {
   return value ?? null;
 }
 
-export function createProductFormData(request: ProductCreateRequest, files: File[]): FormData {
+export function createProductFormData(request: AdminProductUpsertRequest, files: File[]): FormData {
   const formData = new FormData();
   formData.append('product', JSON.stringify(request));
 

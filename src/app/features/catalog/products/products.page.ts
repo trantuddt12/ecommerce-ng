@@ -10,7 +10,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { finalize } from 'rxjs';
-import { Brand, Category, Product, ProductCreateRequest } from '../../../core/models/catalog.models';
+import { AttributeDefinition, Brand, Category, AdminProductListItem, AdminProductUpsertRequest } from '../../../core/models/catalog.models';
+import { AttributeApiService } from '../../../core/services/attribute-api.service';
 import { BrandApiService } from '../../../core/services/brand-api.service';
 import { CategoryApiService } from '../../../core/services/category-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
@@ -148,13 +149,18 @@ import { ProductApiService } from '../../../core/services/product-api.service';
 
             <div class="catalog-form-grid">
               <mat-form-field appearance="outline">
+                <mat-label>Code</mat-label>
+                <input matInput [(ngModel)]="createForm.code" placeholder="IPHONE-16-PRO" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
                 <mat-label>Name</mat-label>
                 <input matInput [(ngModel)]="createForm.name" placeholder="iPhone 16 Pro" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Price</mat-label>
-                <input matInput type="number" [(ngModel)]="createForm.price" min="0" step="0.01" />
+                <mat-label>Slug</mat-label>
+                <input matInput [(ngModel)]="createForm.slug" placeholder="iphone-16-pro" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
@@ -188,6 +194,16 @@ import { ProductApiService } from '../../../core/services/product-api.service';
               </mat-form-field>
 
               <mat-form-field appearance="outline">
+                <mat-label>Visibility</mat-label>
+                <mat-select [(ngModel)]="createForm.visibility">
+                  <mat-option value="CATALOG_SEARCH">CATALOG_SEARCH</mat-option>
+                  <mat-option value="CATALOG">CATALOG</mat-option>
+                  <mat-option value="SEARCH">SEARCH</mat-option>
+                  <mat-option value="HIDDEN">HIDDEN</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
                 <mat-label>Variant price</mat-label>
                 <input matInput type="number" [(ngModel)]="createForm.variantPrice" min="0" step="0.01" />
               </mat-form-field>
@@ -199,8 +215,50 @@ import { ProductApiService } from '../../../core/services/product-api.service';
             </div>
 
             <mat-form-field appearance="outline">
+              <mat-label>Short description</mat-label>
+              <textarea matInput [(ngModel)]="createForm.shortDescription" rows="2" placeholder="Tom tat ngan cho list/card"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
               <mat-label>Description</mat-label>
               <textarea matInput [(ngModel)]="createForm.description" rows="4" placeholder="Mo ta product"></textarea>
+            </mat-form-field>
+
+            <div class="catalog-form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>SEO title</mat-label>
+                <input matInput [(ngModel)]="createForm.seoTitle" placeholder="iPhone 16 Pro chinh hang" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>SEO keywords</mat-label>
+                <input matInput [(ngModel)]="createForm.seoKeywords" placeholder="iphone,apple,smartphone" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>SEO description</mat-label>
+              <textarea matInput [(ngModel)]="createForm.seoDescription" rows="2" placeholder="Mo ta SEO"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Variant axis attribute</mat-label>
+              <mat-select [(ngModel)]="createForm.attributeId">
+                <mat-option [value]="null">Chon attribute</mat-option>
+                @for (attribute of variantAttributes(); track attribute.id) {
+                  <mat-option [value]="attribute.id">{{ attribute.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Variant option</mat-label>
+              <mat-select [(ngModel)]="createForm.optionId">
+                <mat-option [value]="null">Chon option</mat-option>
+                @for (option of selectedAttributeOptions(); track option.id) {
+                  <mat-option [value]="option.id">{{ option.label }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
 
             <div>
@@ -237,8 +295,10 @@ import { ProductApiService } from '../../../core/services/product-api.service';
                       <strong>{{ product.name }}</strong>
                       <div class="catalog-inline-meta">
                         <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
+                        <mat-chip class="catalog-chip-soft">{{ product.code }}</mat-chip>
                         <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
                       </div>
+                      <div class="catalog-inline-meta">/{{ product.slug }}</div>
                     </div>
                   </td>
                 </ng-container>
@@ -259,17 +319,13 @@ import { ProductApiService } from '../../../core/services/product-api.service';
                     <mat-chip [class.catalog-chip-success]="product.status === 'ACTIVE'" [class.catalog-chip-neutral]="product.status !== 'ACTIVE'">
                       {{ product.status || 'DRAFT' }}
                     </mat-chip>
+                    <div class="catalog-inline-meta">{{ product.visibility || 'CATALOG_SEARCH' }}</div>
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="variants">
                   <th mat-header-cell *matHeaderCellDef>Variants</th>
-                  <td mat-cell *matCellDef="let product">{{ product.variants.length }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="images">
-                  <th mat-header-cell *matHeaderCellDef>Images</th>
-                  <td mat-cell *matCellDef="let product">{{ product.images.length }}</td>
+                  <td mat-cell *matCellDef="let product">{{ product.variantCount }}</td>
                 </ng-container>
 
                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -287,17 +343,19 @@ import { ProductApiService } from '../../../core/services/product-api.service';
 })
 export class ProductsPage {
   private readonly productApi = inject(ProductApiService);
+  private readonly attributeApi = inject(AttributeApiService);
   private readonly brandApi = inject(BrandApiService);
   private readonly categoryApi = inject(CategoryApiService);
   private readonly notifications = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
 
-  protected readonly products = signal<Product[]>([]);
+  protected readonly products = signal<AdminProductListItem[]>([]);
   protected readonly brands = signal<Brand[]>([]);
   protected readonly categories = signal<Category[]>([]);
+  protected readonly variantAttributes = signal<AttributeDefinition[]>([]);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
-  protected readonly displayedColumns = ['name', 'category', 'price', 'status', 'variants', 'images'];
+  protected readonly displayedColumns = ['name', 'category', 'price', 'status', 'variants'];
   protected readonly filters = {
     keyword: '',
     status: '',
@@ -307,15 +365,23 @@ export class ProductsPage {
     maxPrice: null as number | null,
   };
   protected readonly createForm = {
+    code: '',
     name: '',
+    slug: '',
+    shortDescription: '',
     description: '',
-    price: null as number | null,
     brandId: null as number | null,
     categoryId: null as number | null,
+    visibility: 'CATALOG_SEARCH' as 'HIDDEN' | 'CATALOG' | 'SEARCH' | 'CATALOG_SEARCH',
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: '',
     variantSku: '',
     variantName: '',
     variantPrice: null as number | null,
     stockQty: 0,
+    attributeId: null as number | null,
+    optionId: null as number | null,
   };
   private selectedFiles: File[] = [];
 
@@ -327,6 +393,9 @@ export class ProductsPage {
   protected loadReferenceData(): void {
     this.brandApi.list().subscribe({ next: (brands) => this.brands.set(brands) });
     this.categoryApi.list().subscribe({ next: (categories) => this.categories.set(categories) });
+    this.attributeApi.listDefinitions().subscribe({
+      next: (attributes: AttributeDefinition[]) => this.variantAttributes.set(attributes.filter((attribute: AttributeDefinition) => attribute.variantAxis)),
+    });
   }
 
   protected loadProducts(): void {
@@ -349,8 +418,8 @@ export class ProductsPage {
   }
 
   protected createProduct(): void {
-    if (!this.createForm.name.trim() || this.createForm.price === null || !this.createForm.brandId || !this.createForm.categoryId) {
-      this.notifications.error('Can nhap name, price, brand va category.');
+    if (!this.createForm.code.trim() || !this.createForm.name.trim() || !this.createForm.slug.trim() || !this.createForm.brandId || !this.createForm.categoryId) {
+      this.notifications.error('Can nhap code, name, slug, brand va category.');
       return;
     }
 
@@ -359,24 +428,38 @@ export class ProductsPage {
       return;
     }
 
-    const request: ProductCreateRequest = {
+    if (!this.createForm.attributeId || !this.createForm.optionId) {
+      this.notifications.error('Can chon it nhat mot variant axis va option de tao SKU hop le.');
+      return;
+    }
+
+    const request: AdminProductUpsertRequest = {
+      code: this.createForm.code.trim(),
       name: this.createForm.name.trim(),
+      slug: this.createForm.slug.trim().toLowerCase(),
+      shortDescription: this.createForm.shortDescription.trim(),
       description: this.createForm.description.trim(),
-      price: this.createForm.price,
       brandId: this.createForm.brandId,
       categoryId: this.createForm.categoryId,
+      visibility: this.createForm.visibility,
+      seoTitle: this.createForm.seoTitle.trim(),
+      seoDescription: this.createForm.seoDescription.trim(),
+      seoKeywords: this.createForm.seoKeywords.trim(),
       variants: [{
         sku: this.createForm.variantSku.trim(),
         name: this.createForm.variantName.trim(),
         barcode: '',
-        price: this.createForm.variantPrice ?? this.createForm.price,
+        price: this.createForm.variantPrice,
         compareAtPrice: null,
         stockQty: this.createForm.stockQty,
         weight: null,
         imageUrl: '',
-        status: null,
+        status: 'ACTIVE',
         signature: this.createForm.variantSku.trim(),
-        attributes: [],
+        attributes: [{
+          attributeId: this.createForm.attributeId,
+          optionId: this.createForm.optionId,
+        }],
       }],
     };
 
@@ -410,16 +493,28 @@ export class ProductsPage {
     return this.selectedFiles.length;
   }
 
+  protected selectedAttributeOptions() {
+    return this.variantAttributes().find((attribute) => attribute.id === this.createForm.attributeId)?.attributeValues ?? [];
+  }
+
   private resetCreateForm(): void {
+    this.createForm.code = '';
     this.createForm.name = '';
+    this.createForm.slug = '';
+    this.createForm.shortDescription = '';
     this.createForm.description = '';
-    this.createForm.price = null;
     this.createForm.brandId = null;
     this.createForm.categoryId = null;
+    this.createForm.visibility = 'CATALOG_SEARCH';
+    this.createForm.seoTitle = '';
+    this.createForm.seoDescription = '';
+    this.createForm.seoKeywords = '';
     this.createForm.variantSku = '';
     this.createForm.variantName = '';
     this.createForm.variantPrice = null;
     this.createForm.stockQty = 0;
+    this.createForm.attributeId = null;
+    this.createForm.optionId = null;
     this.selectedFiles = [];
   }
 }

@@ -176,17 +176,24 @@ export interface ProductVariantAttribute {
   optionId: number;
 }
 
-export interface ProductVariant {
+export interface InventorySummary {
+  onHandQty: number;
+  reservedQty: number;
+  availableQty: number;
+}
+
+export interface AdminProductVariant {
+  id?: number;
   sku: string;
   name: string;
   barcode: string;
   price: number | null;
   compareAtPrice: number | null;
-  stockQty: number | null;
   weight: number | null;
   imageUrl: string;
   status: string | null;
   signature: string;
+  inventory?: InventorySummary;
   attributes: ProductVariantAttribute[];
 }
 
@@ -197,29 +204,43 @@ export interface ProductImage {
   productId: number;
 }
 
-export interface Product {
+export interface AdminProductListItem {
   id: number;
+  code: string;
   name: string;
-  description: string;
-  price: number | null;
+  slug: string;
+  shortDescription: string | null;
   status: string | null;
-  sellerId: number | null;
-  categoryId: number;
+  visibility: 'HIDDEN' | 'CATALOG' | 'SEARCH' | 'CATALOG_SEARCH' | null;
   brandId: number;
-  images: ProductImage[];
-  variants: ProductVariant[];
+  brandName: string | null;
+  categoryId: number;
+  categoryName: string | null;
+  publishedAt: string | null;
+  variantCount: number;
+  price: number | null;
+  thumbnailUrl: string | null;
 }
 
-export interface ProductResponse {
+export interface AdminProductDetail {
   id: number;
+  code: string;
   name: string;
+  slug: string;
+  shortDescription: string | null;
   description: string;
-  price: number | null;
   status: string | null;
+  visibility: 'HIDDEN' | 'CATALOG' | 'SEARCH' | 'CATALOG_SEARCH' | null;
+  publishedAt: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
   sellerId: number | null;
+  brandName?: string | null;
   categoryId: number;
   brandId: number;
   images: ProductImage[];
+  variants: AdminProductVariant[];
 }
 
 export interface ProductFilter {
@@ -231,13 +252,34 @@ export interface ProductFilter {
   keyword?: string | null;
 }
 
-export interface ProductCreateRequest {
+export interface AdminProductUpsertRequest {
+  code: string;
   name: string;
+  slug: string;
+  shortDescription: string;
   description: string;
-  price: number | null;
   categoryId: number | null;
   brandId: number | null;
-  variants: ProductVariant[];
+  visibility: 'HIDDEN' | 'CATALOG' | 'SEARCH' | 'CATALOG_SEARCH';
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  variants: AdminProductVariantUpsert[];
+}
+
+export interface AdminProductVariantUpsert {
+  id?: number | null;
+  sku: string;
+  name: string;
+  barcode: string;
+  price: number | null;
+  compareAtPrice: number | null;
+  stockQty: number | null;
+  weight: number | null;
+  imageUrl: string;
+  status: string | null;
+  signature: string;
+  attributes: ProductVariantAttribute[];
 }
 
 export type ImportExportDomain = 'brand' | 'category' | 'product' | 'attributes' | 'category-attributes';
