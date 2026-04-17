@@ -55,7 +55,7 @@ export const routes: Routes = [
         path: 'management/roles',
         component: RolesPage,
         canActivate: [permissionGuard],
-        data: { permissions: ['ROLE_MANAGE', 'ROLE_VIEW'] },
+        data: { permissions: ['USER_MANAGE','USER_VIEW', 'ROLE_MANAGE'] },
       },
       {
         path: 'catalog/brands',

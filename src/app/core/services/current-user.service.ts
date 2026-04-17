@@ -31,13 +31,29 @@ export class CurrentUserService {
   ) {}
 
   loadCurrentUser() {
-    return this.api.get<BackendUser | ApiEnvelope<BackendUser>>(API_ENDPOINTS.auth.me).pipe(
-      map((response) => this.unwrapUserResponse(response)),
-      map((response) => this.mapCurrentUser(response)),
-      catchError(() => of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()))),
-      tap((user) => this.authStore.setCurrentUser(user)),
-    );
-  }
+  return this.api.get<BackendUser | ApiEnvelope<BackendUser>>(API_ENDPOINTS.auth.me).pipe(
+
+    tap(res => {
+      console.log('API raw:', res);
+    }),
+
+    map((response) => {
+      return this.unwrapUserResponse(response);
+    }),
+
+    map((response) => {
+      return this.mapCurrentUser(response);
+    }),
+
+    catchError((err) => {
+      return of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()));
+    }),
+
+    tap((user) => {
+      this.authStore.setCurrentUser(user);
+    }),
+  );
+}
 
   setCurrentUserFromToken(token: string | null): void {
     this.authStore.setCurrentUser(this.mapCurrentUserFromToken(token));

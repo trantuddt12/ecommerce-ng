@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
-import { LoginRequest, LoginResponse, OtpRequest, VerifyOtpRequest } from '../models/auth.models';
+import { ApiEnvelope, LoginRequest, LoginResponse, OtpRequest, VerifyOtpRequest } from '../models/auth.models';
 import { AuthStore } from '../state/auth.store';
 import { CurrentUserService } from './current-user.service';
 import { SessionService } from './session.service';
@@ -19,11 +19,12 @@ export class AuthService {
   ) {}
 
   login(payload: LoginRequest) {
-    return this.api.post<LoginResponse>(API_ENDPOINTS.auth.login, payload).pipe(
+    return this.api.post<ApiEnvelope<LoginResponse>>(API_ENDPOINTS.auth.login, payload).pipe(
       switchMap((response) => {
-        this.sessionService.setAccessToken(response.accessToken);
-        this.currentUserService.setCurrentUserFromToken(response.accessToken);
-        return this.currentUserService.loadCurrentUser().pipe(map(() => response));
+        const accessToken = response.data.accessToken;
+        this.sessionService.setAccessToken(accessToken);
+        this.currentUserService.setCurrentUserFromToken(accessToken);
+        return this.currentUserService.loadCurrentUser().pipe(map(() => response.data));
       }),
     );
   }
@@ -31,8 +32,8 @@ export class AuthService {
   refresh(): Observable<string> {
     if (!this.refreshInFlight$) {
       this.authStore.setRefreshing(true);
-      this.refreshInFlight$ = this.api.post<LoginResponse>(API_ENDPOINTS.auth.refresh, {}).pipe(
-        map((response) => response.accessToken),
+      this.refreshInFlight$ = this.api.post<ApiEnvelope<LoginResponse>>(API_ENDPOINTS.auth.refresh, {}).pipe(
+        map((response) => response.data.accessToken),
         tap((token) => {
           this.sessionService.setAccessToken(token);
           this.currentUserService.setCurrentUserFromToken(token);

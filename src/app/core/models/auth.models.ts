@@ -9,6 +9,12 @@ export interface LoginResponse {
   refreshToken?: string;
 }
 
+export interface ApiEnvelope<T> {
+  data: T;
+  timestamp?: string | null;
+  page?: unknown;
+}
+
 export interface AuthSession {
   accessToken: string | null;
   isAuthenticated: boolean;
@@ -23,4 +29,21 @@ export interface VerifyOtpRequest {
   email?: string;
   username?: string;
   otp: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  email: string;
+  phonenumber?: string | null;
+  roleId?: number | null;
+}
+
+export interface UserResponse {
+  id: number;
+  username: string;
+  email: string;
+  phoneNumber?: string | null;
+  status?: string | null;
+  roleIds: number[];
 }
