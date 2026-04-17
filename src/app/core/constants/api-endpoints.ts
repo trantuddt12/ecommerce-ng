@@ -12,14 +12,22 @@ export const API_ENDPOINTS = {
     check: '/health-check',
   },
   user: {
+    list: '/user',
+    create: '/user',
     register: '/user/register',
     update: '/user/update',
+    delete: (id: string | number) => `/user/${id}`,
     byId: (id: string | number) => `/user/${id}`,
   },
   role: {
     list: '/role',
     create: '/role',
+    byId: (id: string | number) => `/role/${id}`,
+    update: (id: string | number) => `/role/${id}`,
     delete: (id: string | number) => `/role/${id}`,
+  },
+  permission: {
+    list: '/permissions',
   },
   brand: {
     list: '/brands',

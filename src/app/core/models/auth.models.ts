@@ -47,6 +47,38 @@ export interface RegisterRequest {
   roleId?: number | null;
 }
 
+export interface PermissionResponse {
+  id: number;
+  name: string;
+  description?: string | null;
+}
+
+export interface RoleResponse {
+  id: number;
+  name: string;
+  description?: string | null;
+  permissions: PermissionResponse[];
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  email: string;
+  phonenumber?: string | null;
+  status?: string | null;
+  roleIds?: number[];
+}
+
+export interface UpdateUserRequest {
+  id: number;
+  username?: string | null;
+  password?: string | null;
+  email?: string | null;
+  phonenumber?: string | null;
+  status?: string | null;
+  roleIds?: number[];
+}
+
 export interface UserResponse {
   id: number;
   username: string;
@@ -54,4 +86,5 @@ export interface UserResponse {
   phoneNumber?: string | null;
   status?: string | null;
   roleIds: number[];
+  roles?: RoleResponse[];
 }
