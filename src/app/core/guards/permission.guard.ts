@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthStore } from '../state/auth.store';
-import { hasAllPermissions } from '../utils/permission.util';
+import { hasAnyPermission } from '../utils/permission.util';
 
 export const permissionGuard: CanActivateFn = (route) => {
   const authStore = inject(AuthStore);
@@ -12,7 +12,7 @@ export const permissionGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  if (hasAllPermissions(authStore.permissions(), requiredPermissions)) {
+  if (hasAnyPermission(authStore.permissions(), requiredPermissions)) {
     return true;
   }
 

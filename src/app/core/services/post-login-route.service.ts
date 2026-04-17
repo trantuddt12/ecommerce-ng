@@ -9,8 +9,7 @@ export class PostLoginRouteService {
 
   getDefaultRoute(): string {
     const permissions = this.authStore.permissions();
-    debugger;
-    if (hasAnyPermission(permissions, ['USER_MANAGE', 'USER_VIEW'])) {
+    if (hasAnyPermission(permissions, ['USER_VIEW'])) {
       return APP_ROUTES.users;
     }
 
@@ -18,7 +17,7 @@ export class PostLoginRouteService {
       return APP_ROUTES.roles;
     }
 
-    if (hasAnyPermission(permissions, ['PRODUCT_MANAGE', 'PRODUCT_VIEW'])) {
+    if (hasAnyPermission(permissions, ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'])) {
       return APP_ROUTES.products;
     }
 
@@ -34,7 +33,7 @@ export class PostLoginRouteService {
       return APP_ROUTES.attributes;
     }
 
-    if (hasAnyPermission(permissions, ['SEARCH_VIEW'])) {
+    if (hasAnyPermission(permissions, ['BRAND_VIEW'])) {
       return APP_ROUTES.search;
     }
 

@@ -47,13 +47,13 @@ export class SidebarComponent {
 
   protected readonly menuItems = [
     { label: 'Dashboard', path: APP_ROUTES.dashboard },
-    { label: 'Users', path: APP_ROUTES.users, permissions: ['USER_MANAGE', 'USER_VIEW'] },
+    { label: 'Users', path: APP_ROUTES.users, permissions: ['USER_VIEW'] },
     { label: 'Roles', path: APP_ROUTES.roles, permissions: ['ROLE_MANAGE', 'ROLE_VIEW'] },
     { label: 'Brands', path: APP_ROUTES.brands, permissions: ['BRAND_MANAGE', 'BRAND_VIEW'] },
     { label: 'Categories', path: APP_ROUTES.categories, permissions: ['CATEGORY_MANAGE', 'CATEGORY_VIEW'] },
-    { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_MANAGE', 'PRODUCT_VIEW'] },
+    { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
     { label: 'Attributes', path: APP_ROUTES.attributes, permissions: ['ATTRIBUTE_MANAGE', 'ATTRIBUTE_VIEW'] },
-    { label: 'Search', path: APP_ROUTES.search, permissions: ['SEARCH_VIEW'] },
+    { label: 'Search', path: APP_ROUTES.search, permissions: ['BRAND_VIEW'] },
   ];
 
   protected canAccess(requiredPermissions: string[]): boolean {
