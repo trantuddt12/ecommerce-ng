@@ -30,10 +30,18 @@ export const API_ENDPOINTS = {
   },
   category: {
     list: '/categories',
+    tree: '/categories/tree',
     create: '/categories',
     byId: (id: string | number) => `/categories/${id}`,
+    bySlug: (slug: string) => `/categories/by-slug/${slug}`,
+    deleted: '/categories/deleted',
     update: (id: string | number) => `/categories/${id}`,
     delete: (id: string | number) => `/categories/${id}`,
+    deactivate: (id: string | number) => `/categories/${id}/deactivate`,
+    status: (id: string | number) => `/categories/${id}/status`,
+    move: (id: string | number) => `/categories/${id}/move`,
+    reorder: '/categories/reorder',
+    merge: '/categories/merge',
   },
   product: {
     list: '/products',

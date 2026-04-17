@@ -32,19 +32,86 @@ export interface CategoryAttribute {
 
 export interface Category {
   id: number;
+  code: string;
   name: string;
   slug: string;
   description: string;
+  parentName?: string | null;
   parentId: number | null;
+  level: number;
+  path: string;
+  ancestorIds: number[];
+  sortOrder: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  visible: boolean;
+  assignable: boolean;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+  productCount?: number | null;
+  childrenCount?: number | null;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   childrenIds: number[];
   attributes: CategoryAttribute[];
 }
 
-export interface CategoryMutationRequest {
+export interface CategoryTreeNode {
+  id: number;
+  code: string;
   name: string;
+  slug: string;
+  level: number;
+  path: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  visible: boolean;
+  assignable: boolean;
+  sortOrder: number;
+  children: CategoryTreeNode[];
+}
+
+export interface CategoryMutationRequest {
+  code: string;
+  name: string;
+  slug: string;
   description: string;
   parentId: number | null;
+  sortOrder: number | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+  visible: boolean;
+  assignable: boolean;
+  imageUrl?: string | null;
+  iconUrl?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
   attributes: CategoryAttribute[];
+}
+
+export interface CategoryMoveRequest {
+  newParentId: number | null;
+  sortOrder: number | null;
+}
+
+export interface CategoryReorderItemRequest {
+  id: number;
+  sortOrder: number;
+}
+
+export interface CategoryReorderRequest {
+  parentId: number | null;
+  orders: CategoryReorderItemRequest[];
+}
+
+export interface CategoryMergeRequest {
+  sourceCategoryIds: number[];
+  targetCategoryId: number;
+  moveChildren: boolean;
+  deactivateSources: boolean;
 }
 
 export interface AttributeValue {
