@@ -1,34 +1,42 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-verify-otp-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule],
   template: `
-    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
-      <div>
-        <p class="eyebrow">OTP Verify</p>
-        <h2>Xac thuc ma OTP toi thieu cho auth flow.</h2>
-      </div>
+    <mat-card class="auth-page auth-card">
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <p class="auth-eyebrow">OTP Verify</p>
+          <h2 class="auth-title">Xac thuc ma OTP toi thieu cho auth flow.</h2>
 
-      <label>
-        Email
-        <input type="email" formControlName="email" />
-      </label>
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" />
+          </mat-form-field>
 
-      <label>
-        OTP
-        <input type="text" formControlName="otp" />
-      </label>
+          <mat-form-field appearance="outline">
+            <mat-label>OTP</mat-label>
+            <input matInput type="text" formControlName="otp" />
+          </mat-form-field>
 
-      <button type="submit" [disabled]="form.invalid">Xac thuc</button>
-    </form>
+          <div class="auth-actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Xac thuc</button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
   `,
-  styles: [`.auth-form { width: min(28rem, 100%); display: grid; gap: 1rem; } .eyebrow { text-transform: uppercase; letter-spacing: 0.16em; color: #64748b; font-size: 0.75rem; margin: 0 0 0.5rem; } h2 { margin: 0; font-size: 1.8rem; line-height: 1.15; } label { display: grid; gap: 0.45rem; font-weight: 600; color: #334155; } input { border: 1px solid #cbd5e1; border-radius: 0.9rem; padding: 0.95rem 1rem; font: inherit; } button { border: 0; border-radius: 999px; padding: 1rem 1.2rem; background: #7c3aed; color: #fff; cursor: pointer; }`],
+  styles: [`form { display: grid; gap: 1rem; }`],
 })
 export class VerifyOtpPage {
   private readonly formBuilder = inject(FormBuilder);

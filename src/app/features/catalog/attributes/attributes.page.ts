@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs';
 import {
@@ -18,117 +25,167 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-attributes-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    MatTableModule,
+  ],
   template: `
-    <section class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">Catalog Schema</p>
-        <h2>Attributes va category attributes</h2>
-        <p>Nap song song attributes, attribute-options, categories va mapping theo categoryId truoc khi tao product.</p>
-      </header>
+    <section class="catalog-page">
+      <mat-card class="catalog-hero">
+        <mat-card-content>
+          <p class="catalog-eyebrow">Catalog Schema</p>
+          <h2>Attribute schema view</h2>
+          <p>Theo doi attribute definitions, option counts va category mappings trong mot giao dien Material de doc nhanh hon.</p>
+        </mat-card-content>
+      </mat-card>
 
-      <section class="stats-grid">
-        <article class="card">
-          <span>Attributes</span>
-          <strong>{{ attributeDefinitions().length }}</strong>
-        </article>
-        <article class="card">
-          <span>Options</span>
-          <strong>{{ attributeOptions().length }}</strong>
-        </article>
-        <article class="card">
-          <span>Categories</span>
-          <strong>{{ categories().length }}</strong>
-        </article>
+      <section class="catalog-stats">
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Attributes</p>
+            <p class="catalog-stat-value">{{ attributeDefinitions().length }}</p>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Options</p>
+            <p class="catalog-stat-value">{{ attributeOptions().length }}</p>
+          </mat-card-content>
+        </mat-card>
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Categories</p>
+            <p class="catalog-stat-value">{{ categories().length }}</p>
+          </mat-card-content>
+        </mat-card>
       </section>
 
-      <section class="panel schema-panel">
-        <div class="section-header">
-          <h3>Danh sach attribute definitions</h3>
-          <button type="button" class="secondary" (click)="loadData()" [disabled]="loading()">Tai lai</button>
-        </div>
-
-        @if (errorMessage()) {
-          <p class="error-message">{{ errorMessage() }}</p>
-        }
-
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Value type</th>
-                <th>Flags</th>
-                <th>Options</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (attribute of attributeDefinitions(); track attribute.id) {
-                <tr>
-                  <td>{{ attribute.id }}</td>
-                  <td>{{ attribute.code }}</td>
-                  <td>{{ attribute.name }}</td>
-                  <td>{{ attribute.valueType }}</td>
-                  <td>{{ renderFlags(attribute) }}</td>
-                  <td>{{ resolveOptionCount(attribute.id) }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" class="empty-state">Chua co attribute definition nao.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel category-attribute-panel">
-        <div class="section-header">
-          <h3>Category attribute mapping</h3>
-        </div>
-
-        <label>
-          <span>Category</span>
-          <select [(ngModel)]="selectedCategoryId" (ngModelChange)="loadCategoryAttributes()">
-            <option [ngValue]="null">Chon category</option>
-            @for (category of categories(); track category.id) {
-              <option [ngValue]="category.id">{{ category.name }}</option>
+      <section class="catalog-grid">
+        <mat-card class="catalog-panel catalog-span-7">
+          <mat-card-content>
+            @if (loading()) {
+              <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
             }
-          </select>
-        </label>
 
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Attribute</th>
-                <th>Required</th>
-                <th>Variant axis</th>
-                <th>Filterable</th>
-                <th>Specification</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of categoryAttributes(); track item.id) {
-                <tr>
-                  <td>{{ item.id }}</td>
-                  <td>{{ resolveAttributeName(item.attributeId) }}</td>
-                  <td>{{ item.required ? 'Yes' : 'No' }}</td>
-                  <td>{{ item.variantAxis ? 'Yes' : 'No' }}</td>
-                  <td>{{ item.filterable ? 'Yes' : 'No' }}</td>
-                  <td>{{ item.specification ? 'Yes' : 'No' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" class="empty-state">{{ selectedCategoryId ? 'Category nay chua co attribute mapping.' : 'Chon category de xem mapping.' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Danh sach attribute definitions</h3>
+                <p>Doc nhanh code, value type va cac flag dung trong catalog schema.</p>
+              </div>
+
+              <button mat-stroked-button type="button" (click)="loadData()" [disabled]="loading()">Tai lai</button>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="catalog-error">{{ errorMessage() }}</div>
+            }
+
+            @if (attributeDefinitions().length) {
+              <table mat-table [dataSource]="attributeDefinitions()" class="catalog-table">
+                <ng-container matColumnDef="attribute">
+                  <th mat-header-cell *matHeaderCellDef>Attribute</th>
+                  <td mat-cell *matCellDef="let attribute">
+                    <div>
+                      <strong>{{ attribute.name }}</strong>
+                      <div class="catalog-inline-meta">
+                        <mat-chip class="catalog-chip-neutral">#{{ attribute.id }}</mat-chip>
+                        <mat-chip class="catalog-chip-soft">{{ attribute.code }}</mat-chip>
+                      </div>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="valueType">
+                  <th mat-header-cell *matHeaderCellDef>Value type</th>
+                  <td mat-cell *matCellDef="let attribute">{{ attribute.valueType }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="flags">
+                  <th mat-header-cell *matHeaderCellDef>Flags</th>
+                  <td mat-cell *matCellDef="let attribute">{{ renderFlags(attribute) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="options">
+                  <th mat-header-cell *matHeaderCellDef>Options</th>
+                  <td mat-cell *matCellDef="let attribute">{{ resolveOptionCount(attribute.id) }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="definitionColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: definitionColumns"></tr>
+              </table>
+            } @else if (!loading()) {
+              <div class="catalog-empty">Chua co attribute definition nao.</div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="catalog-panel catalog-span-5">
+          <mat-card-content>
+            @if (loading() && selectedCategoryId) {
+              <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
+            }
+
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Category attribute mapping</h3>
+                <p>Chon category de xem mapping va cac flag cho product schema.</p>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Category</mat-label>
+              <mat-select [(ngModel)]="selectedCategoryId" (ngModelChange)="loadCategoryAttributes()">
+                <mat-option [value]="null">Chon category</mat-option>
+                @for (category of categories(); track category.id) {
+                  <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            @if (categoryAttributes().length) {
+              <table mat-table [dataSource]="categoryAttributes()" class="catalog-table">
+                <ng-container matColumnDef="attribute">
+                  <th mat-header-cell *matHeaderCellDef>Attribute</th>
+                  <td mat-cell *matCellDef="let item">{{ resolveAttributeName(item.attributeId) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="flags">
+                  <th mat-header-cell *matHeaderCellDef>Flags</th>
+                  <td mat-cell *matCellDef="let item">
+                    <div class="catalog-inline-meta">
+                      @if (item.required) {
+                        <mat-chip class="catalog-chip-success">required</mat-chip>
+                      }
+                      @if (item.variantAxis) {
+                        <mat-chip class="catalog-chip-soft">variant</mat-chip>
+                      }
+                      @if (item.filterable) {
+                        <mat-chip class="catalog-chip-neutral">filterable</mat-chip>
+                      }
+                      @if (item.specification) {
+                        <mat-chip class="catalog-chip-neutral">specification</mat-chip>
+                      }
+                    </div>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="mappingColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: mappingColumns"></tr>
+              </table>
+            } @else {
+              <div class="catalog-empty">
+                {{ selectedCategoryId ? 'Category nay chua co attribute mapping.' : 'Chon category de xem mapping.' }}
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
       </section>
     </section>
   `,
@@ -147,6 +204,8 @@ export class AttributesPage {
   protected readonly attributeOptions = signal<AttributeValue[]>([]);
   protected readonly categories = signal<Category[]>([]);
   protected readonly categoryAttributes = signal<CategoryAttribute[]>([]);
+  protected readonly definitionColumns = ['attribute', 'valueType', 'flags', 'options'];
+  protected readonly mappingColumns = ['attribute', 'flags'];
   protected selectedCategoryId: number | null = null;
 
   constructor() {

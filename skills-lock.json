@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "angular-best-practices": {
+      "source": "alfredoperez/angular-best-practices",
+      "sourceType": "github",
+      "computedHash": "bd5a37f3523908e9f3fdb94b12f597cb757e946b4d63621b6982a9abfbaf234d"
+    },
+    "angular-material": {
+      "source": "pluginagentmarketplace/custom-plugin-angular",
+      "sourceType": "github",
+      "computedHash": "539a70d810937d554a65be260d6bc28a85ad6515f8e84457303472bed7deceba"
+    },
+    "angular-ui-patterns": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "eae6198874d487497a07813c09ce01bc2ab3010062e1be1121e0adde5736f62e"
+    }
+  }
+}

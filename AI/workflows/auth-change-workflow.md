@@ -1,4 +1,4 @@
-# Skill: Auth Change
+# Workflow: Auth Change
 
 ## Khi nao dung
 

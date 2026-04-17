@@ -1,7 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, tap } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTableModule } from '@angular/material/table';
+import { finalize } from 'rxjs';
 import { Brand } from '../../../core/models/catalog.models';
 import { BrandApiService } from '../../../core/services/brand-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
@@ -10,231 +18,137 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-brands-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatCheckboxModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatTableModule,
+  ],
   template: `
-    <section class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">Catalog</p>
-        <h2>Brand CRUD</h2>
-        <p>Dong bo voi GET/POST /brands va PATCH /brands/update/:id theo contract basecommerce.</p>
-      </header>
+    <section class="catalog-page">
+      <mat-card class="catalog-hero">
+        <mat-card-content>
+          <p class="catalog-eyebrow">Catalog</p>
+          <h2>Brand workspace</h2>
+          <p>Dong bo voi API brand hien co, gom form CRUD va bang theo doi trong cung mot bo cuc Material.</p>
+        </mat-card-content>
+      </mat-card>
 
-      <section class="panel form-panel">
-        <div class="section-header">
-          <h3>{{ editingId() ? 'Cap nhat brand' : 'Tao brand moi' }}</h3>
-          @if (editingId()) {
-            <button type="button" class="secondary" (click)="resetForm()">Huy sua</button>
-          }
-        </div>
-
-        <div class="field-grid">
-          <label>
-            <span>Name</span>
-            <input [(ngModel)]="form.name" placeholder="Apple" />
-          </label>
-
-          <label>
-            <span>Slug</span>
-            <input [(ngModel)]="form.slug" placeholder="apple" [disabled]="editingId() !== null" />
-          </label>
-
-          <label class="checkbox-field">
-            <span>Generic</span>
-            <input type="checkbox" [(ngModel)]="form.generic" />
-          </label>
-        </div>
-
-        <label>
-          <span>Description</span>
-          <textarea [(ngModel)]="form.description" rows="3" placeholder="Mo ta ngan cho brand"></textarea>
-        </label>
-
-        <div class="actions">
-          <button type="button" (click)="save()" [disabled]="loading()">{{ editingId() ? 'Luu cap nhat' : 'Tao brand' }}</button>
-        </div>
+      <section class="catalog-stats">
+        <mat-card class="catalog-stat-card"><mat-card-content><p class="catalog-stat-label">Tong brands</p><p class="catalog-stat-value">{{ brands().length }}</p></mat-card-content></mat-card>
+        <mat-card class="catalog-stat-card"><mat-card-content><p class="catalog-stat-label">Dang sua</p><p class="catalog-stat-value">{{ editingId() ? 1 : 0 }}</p></mat-card-content></mat-card>
+        <mat-card class="catalog-stat-card"><mat-card-content><p class="catalog-stat-label">Generic brands</p><p class="catalog-stat-value">{{ genericBrandCount() }}</p></mat-card-content></mat-card>
       </section>
 
-      <section class="panel table-panel">
-        <div class="section-header">
-          <h3>Danh sach brands</h3>
-          <button type="button" class="secondary" (click)="loadBrands()" [disabled]="loading()">Tai lai</button>
-        </div>
-
-        @if (errorMessage()) {
-          <p class="error-message">{{ errorMessage() }}</p>
-        }
-
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Generic</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (brand of brands(); track brand.id) {
-                <tr>
-                  <td>{{ brand.id }}</td>
-                  <td>{{ brand.name }}</td>
-                  <td>{{ brand.slug }}</td>
-                  <td>{{ brand.generic ? 'Yes' : 'No' }}</td>
-                  <td>{{ brand.description || '-' }}</td>
-                  <td class="row-actions">
-                    <button type="button" class="secondary" (click)="startEdit(brand)">Sua</button>
-                    <button type="button" class="danger" (click)="deleteBrand(brand)" [disabled]="loading()">Xoa</button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" class="empty-state">Chua co brand nao.</td>
-                </tr>
+      <section class="catalog-grid">
+        <mat-card class="catalog-panel catalog-span-4">
+          <mat-card-content>
+            @if (loading()) { <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar> }
+            <div class="catalog-panel-header">
+              <div>
+                <h3>{{ editingId() ? 'Cap nhat brand' : 'Tao brand moi' }}</h3>
+                <p>Quan ly name, slug va generic flag.</p>
+              </div>
+              @if (editingId()) {
+                <button mat-stroked-button type="button" (click)="resetForm()">Huy sua</button>
               }
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            @if (errorMessage()) {
+              <div class="catalog-error">{{ errorMessage() }}</div>
+            }
+
+            <div class="catalog-form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Name</mat-label>
+                <input matInput [(ngModel)]="form.name" placeholder="Apple" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Slug</mat-label>
+                <input matInput [(ngModel)]="form.slug" placeholder="apple" [disabled]="editingId() !== null" />
+              </mat-form-field>
+            </div>
+
+            <mat-checkbox [(ngModel)]="form.generic">Generic brand</mat-checkbox>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Description</mat-label>
+              <textarea matInput [(ngModel)]="form.description" rows="4" placeholder="Mo ta ngan cho brand"></textarea>
+            </mat-form-field>
+
+            <div class="catalog-actions">
+              <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="loading()">{{ editingId() ? 'Luu cap nhat' : 'Tao brand' }}</button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="catalog-panel catalog-span-8">
+          <mat-card-content>
+            @if (loading()) { <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar> }
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Danh sach brands</h3>
+                <p>Theo doi slug, generic flag va cap nhat nhanh.</p>
+              </div>
+              <button mat-stroked-button type="button" (click)="loadBrands()" [disabled]="loading()">Tai lai</button>
+            </div>
+
+            @if (brands().length) {
+              <table mat-table [dataSource]="brands()" class="catalog-table">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Brand</th>
+                  <td mat-cell *matCellDef="let brand">
+                    <div>
+                      <strong>{{ brand.name }}</strong>
+                      <div class="catalog-inline-meta">
+                        <mat-chip class="catalog-chip-neutral">#{{ brand.id }}</mat-chip>
+                        <mat-chip class="catalog-chip-soft">{{ brand.slug }}</mat-chip>
+                      </div>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="generic">
+                  <th mat-header-cell *matHeaderCellDef>Generic</th>
+                  <td mat-cell *matCellDef="let brand">
+                    <mat-chip [class.catalog-chip-success]="brand.generic" [class.catalog-chip-neutral]="!brand.generic">{{ brand.generic ? 'Yes' : 'No' }}</mat-chip>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="description">
+                  <th mat-header-cell *matHeaderCellDef>Description</th>
+                  <td mat-cell *matCellDef="let brand">{{ brand.description || '-' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef>Action</th>
+                  <td mat-cell *matCellDef="let brand">
+                    <div class="catalog-actions">
+                      <button mat-stroked-button type="button" (click)="startEdit(brand)">Sua</button>
+                      <button mat-flat-button color="warn" type="button" (click)="deleteBrand(brand)" [disabled]="loading()">Xoa</button>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+              </table>
+            } @else {
+              <div class="catalog-empty">Chua co brand nao.</div>
+            }
+          </mat-card-content>
+        </mat-card>
       </section>
     </section>
   `,
-  styles: [`
-    .page-shell {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .hero,
-    .panel {
-      border-radius: 1.25rem;
-      background: #fff;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      padding: 1.5rem;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-      color: #fff;
-    }
-
-    .eyebrow,
-    label span,
-    th {
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.75rem;
-    }
-
-    .eyebrow {
-      margin: 0;
-      color: #bfdbfe;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: 2fr 2fr 1fr;
-      gap: 1rem;
-      align-items: end;
-    }
-
-    label {
-      display: grid;
-      gap: 0.5rem;
-      font-weight: 600;
-      color: #0f172a;
-    }
-
-    .checkbox-field {
-      align-self: center;
-    }
-
-    input,
-    textarea,
-    button {
-      border-radius: 0.85rem;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      padding: 0.75rem 0.9rem;
-      font: inherit;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
-    button {
-      cursor: pointer;
-      background: #1d4ed8;
-      color: #fff;
-      font-weight: 700;
-    }
-
-    button.secondary {
-      background: #fff;
-      color: #1d4ed8;
-    }
-
-    button.danger {
-      background: #b91c1c;
-    }
-
-    button:disabled {
-      cursor: wait;
-      opacity: 0.7;
-    }
-
-    .actions,
-    .section-header,
-    .row-actions {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-
-    .section-header {
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 0.85rem 0.75rem;
-      border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    td {
-      color: #0f172a;
-    }
-
-    .empty-state,
-    .error-message {
-      color: #b91c1c;
-    }
-
-    @media (max-width: 960px) {
-      .field-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .section-header,
-      .row-actions,
-      .actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-    }
-  `],
+  styles: [],
 })
 export class BrandsPage {
   private readonly brandApi = inject(BrandApiService);
@@ -245,6 +159,7 @@ export class BrandsPage {
   protected readonly loading = signal(false);
   protected readonly editingId = signal<number | null>(null);
   protected readonly errorMessage = signal('');
+  protected readonly displayedColumns = ['name', 'generic', 'description', 'actions'];
   protected readonly form = {
     name: '',
     slug: '',
@@ -260,13 +175,7 @@ export class BrandsPage {
     this.loading.set(true);
     this.errorMessage.set('');
     this.brandApi.list()
-      .pipe(
-        tap((res) => { 
-          debugger; 
-          console.log('Fetched brands:', res);
-        }),
-        finalize(() => this.loading.set(false))
-      )
+      .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (brands) => this.brands.set(brands),
         error: (error) => {
@@ -351,5 +260,9 @@ export class BrandsPage {
     this.form.slug = '';
     this.form.description = '';
     this.form.generic = false;
+  }
+
+  protected genericBrandCount(): number {
+    return this.brands().filter((brand) => brand.generic).length;
   }
 }

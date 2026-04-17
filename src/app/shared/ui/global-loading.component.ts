@@ -1,15 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LoadingService } from '../../core/services/loading.service';
 
 @Component({
   selector: 'app-global-loading',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatProgressSpinnerModule],
   template: `
     @if (loadingService.isLoading()) {
       <div class="loading-backdrop" aria-live="polite" aria-label="Dang tai du lieu">
-        <div class="loading-spinner"></div>
+        <mat-progress-spinner mode="indeterminate" diameter="52"></mat-progress-spinner>
       </div>
     }
   `,
@@ -24,19 +25,8 @@ import { LoadingService } from '../../core/services/loading.service';
       z-index: 1000;
     }
 
-    .loading-spinner {
-      width: 3rem;
-      height: 3rem;
-      border-radius: 999px;
-      border: 4px solid rgba(255, 255, 255, 0.35);
-      border-top-color: #ffffff;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+    .loading-backdrop ::ng-deep .mdc-circular-progress__indeterminate-circle-graphic {
+      stroke: #ffffff;
     }
   `],
 })

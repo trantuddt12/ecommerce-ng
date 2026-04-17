@@ -1,4 +1,4 @@
-# Skill: Review Changes
+# Workflow: Review Changes
 
 ## Khi nao dung
 

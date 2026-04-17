@@ -1,6 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
 import { finalize } from 'rxjs';
 import { Brand, Category, Product, ProductCreateRequest } from '../../../core/models/catalog.models';
 import { BrandApiService } from '../../../core/services/brand-api.service';
@@ -12,183 +20,266 @@ import { ProductApiService } from '../../../core/services/product-api.service';
 @Component({
   selector: 'app-products-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    MatTableModule,
+  ],
   template: `
-    <section class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">Catalog</p>
-        <h2>Product list va create</h2>
-        <p>Frontend gui multipart product JSON string + images file list, va filter list theo contract query hien tai.</p>
-      </header>
+    <section class="catalog-page">
+      <mat-card class="catalog-hero">
+        <mat-card-content>
+          <p class="catalog-eyebrow">Catalog</p>
+          <h2>Product hub</h2>
+          <p>Gom filter, tao nhanh va bang theo doi san pham trong cung mot giao dien Material de thao tac nhanh hon.</p>
+        </mat-card-content>
+      </mat-card>
 
-      <section class="panel filter-panel">
-        <div class="section-header">
-          <h3>Filters</h3>
-          <button type="button" class="secondary" (click)="loadProducts()" [disabled]="loading()">Tai lai</button>
-        </div>
+      <section class="catalog-stats">
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Tong products</p>
+            <p class="catalog-stat-value">{{ products().length }}</p>
+          </mat-card-content>
+        </mat-card>
 
-        <div class="field-grid filters-grid">
-          <label>
-            <span>Keyword</span>
-            <input [(ngModel)]="filters.keyword" placeholder="iPhone" />
-          </label>
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Brands loaded</p>
+            <p class="catalog-stat-value">{{ brands().length }}</p>
+          </mat-card-content>
+        </mat-card>
 
-          <label>
-            <span>Status</span>
-            <input [(ngModel)]="filters.status" placeholder="ACTIVE" />
-          </label>
-
-          <label>
-            <span>Brand</span>
-            <select [(ngModel)]="filters.brandId">
-              <option [ngValue]="null">Tat ca brands</option>
-              @for (brand of brands(); track brand.id) {
-                <option [ngValue]="brand.id">{{ brand.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label>
-            <span>Category</span>
-            <select [(ngModel)]="filters.categoryId">
-              <option [ngValue]="null">Tat ca categories</option>
-              @for (category of categories(); track category.id) {
-                <option [ngValue]="category.id">{{ category.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label>
-            <span>Min price</span>
-            <input type="number" [(ngModel)]="filters.minPrice" min="0" />
-          </label>
-
-          <label>
-            <span>Max price</span>
-            <input type="number" [(ngModel)]="filters.maxPrice" min="0" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <button type="button" (click)="loadProducts()" [disabled]="loading()">Ap dung filter</button>
-        </div>
+        <mat-card class="catalog-stat-card">
+          <mat-card-content>
+            <p class="catalog-stat-label">Images queued</p>
+            <p class="catalog-stat-value">{{ selectedFilesCount() }}</p>
+          </mat-card-content>
+        </mat-card>
       </section>
 
-      <section class="panel create-panel">
-        <div class="section-header">
-          <h3>Tao product nhanh</h3>
-        </div>
+      <section class="catalog-grid">
+        <mat-card class="catalog-panel catalog-span-12">
+          <mat-card-content>
+            @if (loading() && !products().length) {
+              <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
+            }
 
-        <div class="field-grid">
-          <label>
-            <span>Name</span>
-            <input [(ngModel)]="createForm.name" placeholder="iPhone 16 Pro" />
-          </label>
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Filters</h3>
+                <p>Loc theo keyword, brand, category va khoang gia.</p>
+              </div>
 
-          <label>
-            <span>Price</span>
-            <input type="number" [(ngModel)]="createForm.price" min="0" step="0.01" />
-          </label>
+              <button mat-stroked-button type="button" (click)="loadProducts()" [disabled]="loading()">Tai lai</button>
+            </div>
 
-          <label>
-            <span>Brand</span>
-            <select [(ngModel)]="createForm.brandId">
-              <option [ngValue]="null">Chon brand</option>
-              @for (brand of brands(); track brand.id) {
-                <option [ngValue]="brand.id">{{ brand.name }}</option>
-              }
-            </select>
-          </label>
+            @if (errorMessage()) {
+              <div class="catalog-error">{{ errorMessage() }}</div>
+            }
 
-          <label>
-            <span>Category</span>
-            <select [(ngModel)]="createForm.categoryId">
-              <option [ngValue]="null">Chon category</option>
-              @for (category of categories(); track category.id) {
-                <option [ngValue]="category.id">{{ category.name }}</option>
-              }
-            </select>
-          </label>
+            <div class="catalog-form-grid-3">
+              <mat-form-field appearance="outline">
+                <mat-label>Keyword</mat-label>
+                <input matInput [(ngModel)]="filters.keyword" placeholder="iPhone" />
+              </mat-form-field>
 
-          <label>
-            <span>Variant SKU</span>
-            <input [(ngModel)]="createForm.variantSku" placeholder="IPH16-PRO-BLK" />
-          </label>
+              <mat-form-field appearance="outline">
+                <mat-label>Status</mat-label>
+                <input matInput [(ngModel)]="filters.status" placeholder="ACTIVE" />
+              </mat-form-field>
 
-          <label>
-            <span>Variant name</span>
-            <input [(ngModel)]="createForm.variantName" placeholder="Black / 256GB" />
-          </label>
+              <mat-form-field appearance="outline">
+                <mat-label>Brand</mat-label>
+                <mat-select [(ngModel)]="filters.brandId">
+                  <mat-option [value]="null">Tat ca brands</mat-option>
+                  @for (brand of brands(); track brand.id) {
+                    <mat-option [value]="brand.id">{{ brand.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-          <label>
-            <span>Variant price</span>
-            <input type="number" [(ngModel)]="createForm.variantPrice" min="0" step="0.01" />
-          </label>
+              <mat-form-field appearance="outline">
+                <mat-label>Category</mat-label>
+                <mat-select [(ngModel)]="filters.categoryId">
+                  <mat-option [value]="null">Tat ca categories</mat-option>
+                  @for (category of categories(); track category.id) {
+                    <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-          <label>
-            <span>Stock qty</span>
-            <input type="number" [(ngModel)]="createForm.stockQty" min="0" />
-          </label>
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Min price</mat-label>
+                <input matInput type="number" [(ngModel)]="filters.minPrice" min="0" />
+              </mat-form-field>
 
-        <label>
-          <span>Description</span>
-          <textarea [(ngModel)]="createForm.description" rows="3" placeholder="Mo ta product"></textarea>
-        </label>
+              <mat-form-field appearance="outline">
+                <mat-label>Max price</mat-label>
+                <input matInput type="number" [(ngModel)]="filters.maxPrice" min="0" />
+              </mat-form-field>
+            </div>
 
-        <label>
-          <span>Images</span>
-          <input type="file" multiple (change)="onFilesSelected($event)" />
-        </label>
+            <div class="catalog-actions">
+              <button mat-flat-button color="primary" type="button" (click)="loadProducts()" [disabled]="loading()">Ap dung filter</button>
+            </div>
+          </mat-card-content>
+        </mat-card>
 
-        <div class="actions">
-          <button type="button" (click)="createProduct()" [disabled]="loading()">Tao product</button>
-        </div>
-      </section>
+        <mat-card class="catalog-panel catalog-span-5">
+          <mat-card-content>
+            @if (loading()) {
+              <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
+            }
 
-      <section class="panel table-panel">
-        <div class="section-header">
-          <h3>Danh sach products</h3>
-        </div>
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Tao product nhanh</h3>
+                <p>Tao nhanh 1 product voi variant dau tien va file upload.</p>
+              </div>
+            </div>
 
-        @if (errorMessage()) {
-          <p class="error-message">{{ errorMessage() }}</p>
-        }
+            <div class="catalog-form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Name</mat-label>
+                <input matInput [(ngModel)]="createForm.name" placeholder="iPhone 16 Pro" />
+              </mat-form-field>
 
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Brand</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Variants</th>
-                <th>Images</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (product of products(); track product.id) {
-                <tr>
-                  <td>{{ product.id }}</td>
-                  <td>{{ product.name }}</td>
-                  <td>{{ resolveBrandName(product.brandId) }}</td>
-                  <td>{{ resolveCategoryName(product.categoryId) }}</td>
-                  <td>{{ product.price ?? '-' }}</td>
-                  <td>{{ product.status || '-' }}</td>
-                  <td>{{ product.variants.length }}</td>
-                  <td>{{ product.images.length }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="8" class="empty-state">Chua co product nao.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Price</mat-label>
+                <input matInput type="number" [(ngModel)]="createForm.price" min="0" step="0.01" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Brand</mat-label>
+                <mat-select [(ngModel)]="createForm.brandId">
+                  <mat-option [value]="null">Chon brand</mat-option>
+                  @for (brand of brands(); track brand.id) {
+                    <mat-option [value]="brand.id">{{ brand.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Category</mat-label>
+                <mat-select [(ngModel)]="createForm.categoryId">
+                  <mat-option [value]="null">Chon category</mat-option>
+                  @for (category of categories(); track category.id) {
+                    <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Variant SKU</mat-label>
+                <input matInput [(ngModel)]="createForm.variantSku" placeholder="IPH16-PRO-BLK" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Variant name</mat-label>
+                <input matInput [(ngModel)]="createForm.variantName" placeholder="Black / 256GB" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Variant price</mat-label>
+                <input matInput type="number" [(ngModel)]="createForm.variantPrice" min="0" step="0.01" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Stock qty</mat-label>
+                <input matInput type="number" [(ngModel)]="createForm.stockQty" min="0" />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Description</mat-label>
+              <textarea matInput [(ngModel)]="createForm.description" rows="4" placeholder="Mo ta product"></textarea>
+            </mat-form-field>
+
+            <div>
+              <label for="product-images-input">Images</label>
+              <input id="product-images-input" type="file" multiple (change)="onFilesSelected($event)" />
+              <p class="catalog-file-note">{{ selectedFilesCount() ? selectedFilesCount() + ' file da duoc chon.' : 'Chua co file nao duoc chon.' }}</p>
+            </div>
+
+            <div class="catalog-actions">
+              <button mat-flat-button color="primary" type="button" (click)="createProduct()" [disabled]="loading()">Tao product</button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="catalog-panel catalog-span-7">
+          <mat-card-content>
+            @if (loading() && products().length) {
+              <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
+            }
+
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Danh sach products</h3>
+                <p>Bang hien thi nhanh tinh trang, thuoc category va so luong media.</p>
+              </div>
+            </div>
+
+            @if (products().length) {
+              <table mat-table [dataSource]="products()" class="catalog-table">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Product</th>
+                  <td mat-cell *matCellDef="let product">
+                    <div>
+                      <strong>{{ product.name }}</strong>
+                      <div class="catalog-inline-meta">
+                        <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
+                        <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
+                      </div>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="category">
+                  <th mat-header-cell *matHeaderCellDef>Category</th>
+                  <td mat-cell *matCellDef="let product">{{ resolveCategoryName(product.categoryId) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="price">
+                  <th mat-header-cell *matHeaderCellDef>Price</th>
+                  <td mat-cell *matCellDef="let product">{{ product.price ?? '-' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let product">
+                    <mat-chip [class.catalog-chip-success]="product.status === 'ACTIVE'" [class.catalog-chip-neutral]="product.status !== 'ACTIVE'">
+                      {{ product.status || 'DRAFT' }}
+                    </mat-chip>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="variants">
+                  <th mat-header-cell *matHeaderCellDef>Variants</th>
+                  <td mat-cell *matCellDef="let product">{{ product.variants.length }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="images">
+                  <th mat-header-cell *matHeaderCellDef>Images</th>
+                  <td mat-cell *matCellDef="let product">{{ product.images.length }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+              </table>
+            } @else if (!loading()) {
+              <div class="catalog-empty">Chua co product nao.</div>
+            }
+          </mat-card-content>
+        </mat-card>
       </section>
     </section>
   `,
@@ -206,6 +297,7 @@ export class ProductsPage {
   protected readonly categories = signal<Category[]>([]);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly displayedColumns = ['name', 'category', 'price', 'status', 'variants', 'images'];
   protected readonly filters = {
     keyword: '',
     status: '',
@@ -312,6 +404,10 @@ export class ProductsPage {
 
   protected resolveCategoryName(categoryId: number): string {
     return this.categories().find((category) => category.id === categoryId)?.name ?? `#${categoryId}`;
+  }
+
+  protected selectedFilesCount(): number {
+    return this.selectedFiles.length;
   }
 
   private resetCreateForm(): void {

@@ -15,15 +15,16 @@ Thu muc `AI/` la bo tai lieu van hanh de agent, AI assistant, va thanh vien du a
 - `instructions/`: Huong dan thuc thi, coding rules, va quy trinh lam viec.
 - `prompts/`: Prompt mau de dung lai cho cac tac vu lap lai.
 - `references/`: Tai lieu tham chieu ve kien truc, routes, auth flow, conventions.
-- `skills/`: Quy trinh xu ly theo nang luc chuyen biet cho cac bai toan cu the.
+- `workflows/`: Quy trinh xu ly noi bo cua du an cho cac bai toan cu the.
 
 ## Cach dung nhanh
 
 1. Doc `references/project-overview.md` de nam toan canh.
 2. Doc `instructions/angular-coding-standards.md` truoc khi sua code.
-3. Chon prompt phu hop trong `prompts/`.
-4. Neu tac vu dac thu, ap dung workflow trong `skills/`.
-5. Neu can tach vai tro, su dung mo ta agent trong `agents/`.
+3. Doc `CONVENTIONS.md` de biet quy uoc dung `AI/` va `.agents/skills/`.
+4. Chon prompt phu hop trong `prompts/`.
+5. Neu tac vu dac thu, ap dung workflow trong `workflows/`.
+6. Neu can tach vai tro, su dung mo ta agent trong `agents/`.
 
 ## Pham vi codebase hien tai
 
@@ -36,5 +37,6 @@ Thu muc `AI/` la bo tai lieu van hanh de agent, AI assistant, va thanh vien du a
 
 - Khi kien truc thay doi, cap nhat `references/` truoc.
 - Khi team doi convention, cap nhat `instructions/`.
-- Khi co task lap lai moi, bo sung `prompts/` hoac `skills/`.
+- Khi co task lap lai moi, bo sung `prompts/` hoac `workflows/`.
+- Khong tron `AI/workflows/` voi `.agents/skills/`: `AI/` la tai lieu noi bo cua repo, con `.agents/skills/` la skill cai boi CLI.
 - Sau moi lan thay doi code hoac tai lieu, ghi nhan thay doi, kiem tra, va todo vao file chung `D:/Spring/ttl-project/AI_PROGRESS.md` de backend va frontend cung follow duoc.

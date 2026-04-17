@@ -1,6 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -9,43 +13,37 @@ import { PostLoginRouteService } from '../../../core/services/post-login-route.s
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule],
   template: `
-    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
-      <div>
-        <p class="eyebrow">Dang nhap</p>
-        <h2>Ket noi voi backend JWT + refresh cookie</h2>
-      </div>
+    <mat-card class="auth-page auth-card">
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <p class="auth-eyebrow">Dang nhap</p>
+          <h2 class="auth-title">Ket noi voi backend JWT + refresh cookie</h2>
 
-      <label>
-        Username
-        <input type="text" formControlName="username" placeholder="admin" />
-      </label>
+          <mat-form-field appearance="outline">
+            <mat-label>Username</mat-label>
+            <input matInput type="text" formControlName="username" placeholder="admin" />
+          </mat-form-field>
 
-      <label>
-        Password
-        <input type="password" formControlName="password" placeholder="********" />
-      </label>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="********" />
+          </mat-form-field>
 
-      <button type="submit" [disabled]="form.invalid">Dang nhap</button>
+          <div class="auth-actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Dang nhap</button>
+          </div>
 
-      <div class="links">
-        <a routerLink="/auth/register">Dang ky</a>
-        <a routerLink="/auth/verify-otp">Xac thuc OTP</a>
-      </div>
-    </form>
+          <div class="auth-links">
+            <a mat-button routerLink="/auth/register">Dang ky</a>
+            <a mat-button routerLink="/auth/verify-otp">Xac thuc OTP</a>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
   `,
-  styles: [`
-    .auth-form { width: min(28rem, 100%); display: grid; gap: 1rem; }
-    .eyebrow { text-transform: uppercase; letter-spacing: 0.16em; color: #64748b; font-size: 0.75rem; margin: 0 0 0.5rem; }
-    h2 { margin: 0; font-size: 1.9rem; line-height: 1.15; }
-    label { display: grid; gap: 0.45rem; font-weight: 600; color: #334155; }
-    input { border: 1px solid #cbd5e1; border-radius: 0.9rem; padding: 0.95rem 1rem; font: inherit; }
-    button { border: 0; border-radius: 999px; padding: 1rem 1.2rem; background: #1d4ed8; color: #fff; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .links { display: flex; justify-content: space-between; }
-    a { color: #1d4ed8; text-decoration: none; }
-  `],
+  styles: [`form { display: grid; gap: 1rem; }`],
 })
 export class LoginPage {
   private readonly formBuilder = inject(FormBuilder);

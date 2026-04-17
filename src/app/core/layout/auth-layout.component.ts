@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, MatCardModule],
   template: `
     <section class="auth-layout">
       <div class="auth-hero">
@@ -16,9 +17,9 @@ import { RouterOutlet } from '@angular/router';
         </p>
       </div>
 
-      <div class="auth-panel">
+      <mat-card class="auth-panel">
         <router-outlet></router-outlet>
-      </div>
+      </mat-card>
     </section>
   `,
   styles: [`
@@ -48,6 +49,8 @@ import { RouterOutlet } from '@angular/router';
       background: rgba(255, 255, 255, 0.98);
       color: #0f172a;
       justify-content: center;
+      border-radius: 0;
+      box-shadow: none;
     }
 
     .eyebrow {

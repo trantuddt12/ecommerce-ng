@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { finalize } from 'rxjs';
 import { ImportExportDomain } from '../../../core/models/catalog.models';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
@@ -10,169 +17,86 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-operations-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+  ],
   template: `
-    <section class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">Catalog Operations</p>
-        <h2>Import va export interface files</h2>
-        <p>
-          Trigger cac job import/export text response cua basecommerce bang dung query contract
-          interfaceFileId va fileName.
-        </p>
-      </header>
+    <section class="catalog-page">
+      <mat-card class="catalog-hero">
+        <mat-card-content>
+          <p class="catalog-eyebrow">Catalog Operations</p>
+          <h2>Import va export interface files</h2>
+          <p>Trigger cac job import/export text response cua basecommerce bang dung query contract interfaceFileId va fileName.</p>
+        </mat-card-content>
+      </mat-card>
 
-      <section class="panel form-panel">
-        <div class="field-grid">
-          <label>
-            <span>Domain</span>
-            <select [(ngModel)]="selectedDomain">
-              @for (option of domainOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
+      <section class="catalog-grid">
+        <mat-card class="catalog-panel catalog-span-5">
+          <mat-card-content>
+            @if (loading()) { <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar> }
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Run job</h3>
+                <p>Chon domain va thong tin interface file de kick off job.</p>
+              </div>
+              <mat-chip class="catalog-chip-soft">{{ selectedDomain }}</mat-chip>
+            </div>
+
+            <div class="catalog-form-grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Domain</mat-label>
+                <mat-select [(ngModel)]="selectedDomain">
+                  @for (option of domainOptions; track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Interface file ID</mat-label>
+                <input matInput [(ngModel)]="interfaceFileId" placeholder="IF-001" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>File name</mat-label>
+                <input matInput [(ngModel)]="fileName" placeholder="brands.csv" />
+              </mat-form-field>
+            </div>
+
+            <div class="catalog-actions">
+              <button mat-flat-button color="primary" type="button" (click)="run('import')" [disabled]="loading()">Import</button>
+              <button mat-stroked-button type="button" (click)="run('export')" [disabled]="loading()">Export</button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="catalog-panel catalog-span-7">
+          <mat-card-content>
+            <div class="catalog-panel-header">
+              <div>
+                <h3>Last response</h3>
+                <p>Ket qua response text tu job import/export gan nhat.</p>
+              </div>
+              @if (loading()) {
+                <mat-chip class="catalog-chip-neutral">Dang chay</mat-chip>
               }
-            </select>
-          </label>
+            </div>
 
-          <label>
-            <span>Interface file ID</span>
-            <input [(ngModel)]="interfaceFileId" placeholder="IF-001" />
-          </label>
-
-          <label>
-            <span>File name</span>
-            <input [(ngModel)]="fileName" placeholder="brands.csv" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <button type="button" (click)="run('import')" [disabled]="loading()">Import</button>
-          <button type="button" class="secondary" (click)="run('export')" [disabled]="loading()">Export</button>
-        </div>
-      </section>
-
-      <section class="panel response-panel">
-        <div class="section-header">
-          <h3>Last response</h3>
-          @if (loading()) {
-            <span class="badge">Dang chay</span>
-          }
-        </div>
-
-        <pre>{{ responseMessage() || 'Chua co response.' }}</pre>
+            <pre>{{ responseMessage() || 'Chua co response.' }}</pre>
+          </mat-card-content>
+        </mat-card>
       </section>
     </section>
   `,
-  styles: [`
-    .page-shell {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .hero,
-    .panel {
-      border-radius: 1.25rem;
-      background: #fff;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      padding: 1.5rem;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-      color: #fff;
-    }
-
-    .eyebrow,
-    .badge,
-    label span {
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.75rem;
-    }
-
-    .eyebrow {
-      margin: 0;
-      color: #bfdbfe;
-    }
-
-    h2,
-    h3 {
-      margin: 0;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    label {
-      display: grid;
-      gap: 0.5rem;
-      color: #0f172a;
-      font-weight: 600;
-    }
-
-    input,
-    select,
-    button {
-      border-radius: 0.85rem;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      padding: 0.75rem 0.9rem;
-      font: inherit;
-    }
-
-    .actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-
-    button {
-      cursor: pointer;
-      background: #1d4ed8;
-      color: #fff;
-      font-weight: 700;
-    }
-
-    button.secondary {
-      background: #fff;
-      color: #1d4ed8;
-    }
-
-    button:disabled {
-      cursor: wait;
-      opacity: 0.7;
-    }
-
-    .response-panel pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #0f172a;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .badge {
-      color: #1d4ed8;
-      font-weight: 700;
-    }
-
-    @media (max-width: 960px) {
-      .field-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .actions {
-        flex-direction: column;
-      }
-    }
-  `],
+  styles: [`pre { margin: 0; white-space: pre-wrap; word-break: break-word; color: #0f172a; }`],
 })
 export class OperationsPage {
   private readonly importExportApi = inject(ImportExportApiService);
