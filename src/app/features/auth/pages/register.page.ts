@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints';
 import { BaseApiService } from '../../../core/http/base-api.service';
+import { ApiEnvelope, RegisterRequest, UserResponse } from '../../../core/models/auth.models';
 import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
@@ -56,7 +57,9 @@ export class RegisterPage {
       return;
     }
 
-    this.api.post(API_ENDPOINTS.user.register, this.form.getRawValue()).subscribe({
+    const payload: RegisterRequest = this.form.getRawValue();
+
+    this.api.post<ApiEnvelope<UserResponse>>(API_ENDPOINTS.user.register, payload).subscribe({
       next: () => this.notifications.success('Dang ky thanh cong.'),
       error: () => undefined,
     });

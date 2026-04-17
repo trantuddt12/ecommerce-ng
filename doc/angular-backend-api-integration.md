@@ -414,10 +414,15 @@ Request body:
   "username": "newuser",
   "password": "123456",
   "email": "newuser@example.com",
-  "phonenumber": "0900000000",
-  "roleId": 2
+  "phonenumber": "0900000000"
 }
 ```
+
+Luu y:
+
+- `roleId` la optional cho public register.
+- Neu frontend khong gui `roleId`, backend tu gan role mac dinh `CUSTOMER`.
+- Chi gui `roleId` khi co luong quan tri tao user voi role cu the va contract da duoc xac nhan.
 
 Response:
 
