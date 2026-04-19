@@ -1,6 +1,6 @@
 export interface LoginRequest {
-  username: string;
-  password: string;
+  username?: string | null;
+  password?: string | null;
   googleToken?: string;
 }
 
@@ -34,6 +34,7 @@ export interface OtpRequest {
 }
 
 export interface VerifyOtpRequest {
+  otpType?: string;
   email?: string;
   username?: string;
   otp: string;

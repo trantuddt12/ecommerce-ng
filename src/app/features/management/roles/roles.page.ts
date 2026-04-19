@@ -109,7 +109,7 @@ import { hasPermission } from '../../../core/utils/permission.util';
               <mat-progress-bar class="management-progress" mode="indeterminate"></mat-progress-bar>
             }
 
-            <div class="management-panel-header">
+            <div class="management-toolbar">
               <div>
                 <h3>Danh sach roles</h3>
                 <p>Tim theo role name, description hoac permission name.</p>
@@ -118,10 +118,12 @@ import { hasPermission } from '../../../core/utils/permission.util';
               <button mat-stroked-button type="button" (click)="loadRoles()" [disabled]="loading()">Tai lai</button>
             </div>
 
-            <mat-form-field appearance="outline" class="management-search">
-              <mat-label>Tim role</mat-label>
-              <input matInput [ngModel]="keyword()" (ngModelChange)="keyword.set($event)" placeholder="role, description, permission" />
-            </mat-form-field>
+            <div class="management-surface-muted">
+              <mat-form-field appearance="outline" class="management-search">
+                <mat-label>Tim role</mat-label>
+                <input matInput [ngModel]="keyword()" (ngModelChange)="keyword.set($event)" placeholder="role, description, permission" />
+              </mat-form-field>
+            </div>
 
             @if (filteredRoles().length) {
               <table mat-table [dataSource]="filteredRoles()" class="management-table">

@@ -17,11 +17,24 @@ Nguon: `src/app/core/services/auth.service.ts`, `src/app/features/auth/pages/log
 
 1. User submit form o `LoginPage`.
 2. `AuthService.login()` goi `POST /auth/login`.
-3. Response tra ve `accessToken`.
-4. `SessionService` luu token.
-5. `CurrentUserService.setCurrentUserFromToken()` dong bo thong tin user tu token.
-6. `CurrentUserService.loadCurrentUser()` nap user detail tu backend.
-7. Component navigate sang `/dashboard` khi thanh cong.
+3. Neu user dang nhap Google, frontend van goi cung endpoint `POST /auth/login` nhung gui `googleToken` thay cho username/password.
+4. Response tra ve `accessToken`.
+5. `SessionService` luu token.
+6. `CurrentUserService.setCurrentUserFromToken()` dong bo thong tin user tu token.
+7. `CurrentUserService.loadCurrentUser()` nap user detail tu backend.
+8. Component navigate sang `/dashboard` khi thanh cong.
+
+## Luong dang ky
+
+Nguon: `src/app/features/auth/pages/register.page.ts`, `src/app/features/auth/pages/verify-otp.page.ts`
+
+1. Public register co 2 nhanh: dang ky truc tiep qua `/user/register` hoac dang ky OTP qua `/auth/sendotpregister`.
+2. Voi dang ky OTP, frontend gui full `RegisterRequest` den `/auth/sendotpregister`.
+3. Backend luu tam request trong Redis va gui OTP qua email.
+4. Frontend dieu huong sang `/auth/verify-otp` kem `email` va `otpType=otp:register:`.
+5. `VerifyOtpPage` goi `/auth/verifyotp?pOtpType=otp:register:&pEmail=...&pOtp=...`.
+6. Backend tao user tu du lieu tam va activate account trong cung flow verify thanh cong.
+7. Sau verify, frontend day user ve login de dang nhap binh thuong hoac Google.
 
 ## Luong khoi tao app
 
@@ -62,3 +75,4 @@ Nguon: `src/app/core/state/auth.store.ts`
 - Khong nen bo sung auth logic rieng trong component neu da co service/interceptor xu ly.
 - Moi thay doi lien quan session can kiem tra ca app init va refresh flow.
 - Khi thay doi login/logout, can kiem tra redirect va stale auth state.
+- Google login/register hien di qua cung auth state, session, interceptor, va `/auth/me` flow nhu login thuong; khong tao social auth store rieng.

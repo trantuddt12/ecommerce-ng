@@ -50,7 +50,7 @@ import { NotificationService } from '../../../core/services/notification.service
               <mat-chip class="catalog-chip-soft">{{ selectedDomain }}</mat-chip>
             </div>
 
-            <div class="catalog-form-grid">
+            <div class="catalog-form-grid catalog-surface-muted">
               <mat-form-field appearance="outline">
                 <mat-label>Domain</mat-label>
                 <mat-select [(ngModel)]="selectedDomain">
@@ -90,13 +90,13 @@ import { NotificationService } from '../../../core/services/notification.service
               }
             </div>
 
-            <pre>{{ responseMessage() || 'Chua co response.' }}</pre>
+            <pre class="catalog-response-block">{{ responseMessage() || 'Chua co response.' }}</pre>
           </mat-card-content>
         </mat-card>
       </section>
     </section>
   `,
-  styles: [`pre { margin: 0; white-space: pre-wrap; word-break: break-word; color: #0f172a; }`],
+  styles: [],
 })
 export class OperationsPage {
   private readonly importExportApi = inject(ImportExportApiService);

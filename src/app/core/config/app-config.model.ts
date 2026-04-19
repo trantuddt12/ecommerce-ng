@@ -3,6 +3,7 @@ export interface AppConfig {
   appName: string;
   apiBaseUrl: string;
   searchApiBaseUrl: string;
+  googleClientId?: string;
   requestTimeoutMs: number;
   defaultLanguage: string;
   enableDebugTools: boolean;
