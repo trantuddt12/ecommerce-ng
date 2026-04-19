@@ -9,6 +9,7 @@ import {
   CategoryMutationRequest,
   CategoryReorderRequest,
   CategoryTreeNode,
+  ImageAsset,
 } from '../models/catalog.models';
 import { BaseApiService } from '../http/base-api.service';
 
@@ -72,5 +73,34 @@ export class CategoryApiService {
 
   delete(id: number): Observable<void> {
     return this.baseApi.delete<void>(API_ENDPOINTS.category.delete(id));
+  }
+
+  addImages(id: number, files: File[]): Observable<Category> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('images', file);
+    }
+
+    return this.baseApi.postFormData<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.images(id), formData).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  setThumbnail(id: number, imageId: number): Observable<Category> {
+    return this.baseApi.patch<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.thumbnail(id, imageId), {}).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  deleteImage(id: number, imageId: number): Observable<Category> {
+    return this.baseApi.delete<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.deleteImage(id, imageId)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  listImages(id: number): Observable<ImageAsset[]> {
+    return this.baseApi.get<ImageAsset[] | ApiEnvelope<ImageAsset[]>>(API_ENDPOINTS.category.images(id)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
   }
 }

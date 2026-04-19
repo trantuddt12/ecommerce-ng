@@ -36,6 +36,9 @@ export const API_ENDPOINTS = {
     byId: (id: string | number) => `/brands/${id}`,
     delete: (id: string | number) => `/brands/${id}`,
     image: (id: string | number) => `/brands/${id}/image`,
+    images: (id: string | number) => `/brands/${id}/images`,
+    deleteImage: (id: string | number, imageId: string | number) => `/brands/${id}/images/${imageId}`,
+    thumbnail: (id: string | number, imageId: string | number) => `/brands/${id}/images/${imageId}/thumbnail`,
   },
   category: {
     list: '/categories',
@@ -61,6 +64,9 @@ export const API_ENDPOINTS = {
     byId: (id: string | number) => `/products/${id}`,
     update: (id: string | number) => `/products/${id}`,
     status: (id: string | number) => `/products/${id}/status`,
+    images: (id: string | number) => `/products/${id}/images`,
+    deleteImage: (id: string | number, imageId: string | number) => `/products/${id}/images/${imageId}`,
+    thumbnail: (id: string | number, imageId: string | number) => `/products/${id}/images/${imageId}/thumbnail`,
   },
   attribute: {
     list: '/attributes',

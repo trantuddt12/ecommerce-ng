@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, Inject, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,11 +11,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { finalize } from 'rxjs';
+import { AppConfig } from '../../../core/config/app-config.model';
 import { Category, CategoryTreeNode } from '../../../core/models/catalog.models';
 import { CategoryApiService } from '../../../core/services/category-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthStore } from '../../../core/state/auth.store';
+import { APP_CONFIG } from '../../../core/tokens/app-config.token';
+import { resolveMediaUrl } from '../../../core/utils/media-url.util';
 import { hasPermission } from '../../../core/utils/permission.util';
 
 @Component({
@@ -92,7 +95,7 @@ import { hasPermission } from '../../../core/utils/permission.util';
       </section>
 
       <section class="catalog-grid">
-        <mat-card class="catalog-panel catalog-span-4 category-panel category-editor-panel">
+        <mat-card #categoryEditorPanel class="catalog-panel catalog-span-4 category-panel category-editor-panel">
           <mat-card-content>
             @if (loading()) {
               <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
@@ -125,7 +128,7 @@ import { hasPermission } from '../../../core/utils/permission.util';
 
               <mat-form-field appearance="outline">
                 <mat-label>Name</mat-label>
-                <input matInput [(ngModel)]="form.name" placeholder="Laptop" [disabled]="!canManageCategories()" />
+                <input #categoryNameInput matInput [(ngModel)]="form.name" placeholder="Laptop" [disabled]="!canManageCategories()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
@@ -165,11 +168,6 @@ import { hasPermission } from '../../../core/utils/permission.util';
 
             <div class="catalog-form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Image URL</mat-label>
-                <input matInput [(ngModel)]="form.imageUrl" placeholder="https://..." [disabled]="!canManageCategories()" />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
                 <mat-label>Icon URL</mat-label>
                 <input matInput [(ngModel)]="form.iconUrl" placeholder="https://..." [disabled]="!canManageCategories()" />
               </mat-form-field>
@@ -203,6 +201,49 @@ import { hasPermission } from '../../../core/utils/permission.util';
                 <button mat-stroked-button type="button" (click)="moveCategory()" [disabled]="loading() || !canManageCategories()">Move</button>
               }
             </div>
+
+            @if (editingId()) {
+              <div class="catalog-subsection">
+                <div class="catalog-panel-header">
+                  <div>
+                    <h3>Category images</h3>
+                    <p>Quan ly gallery sau khi category da ton tai, khong dung upload tam hay nhap tay image URL.</p>
+                  </div>
+                </div>
+
+                @if (selectedCategoryThumbnailUrl()) {
+                  <div class="brand-image-preview">
+                    <img [src]="selectedCategoryThumbnailUrl()!" [alt]="form.name || 'Category image'" />
+                  </div>
+                } @else {
+                  <div class="catalog-empty">Category nay chua co thumbnail.</div>
+                }
+
+                <div class="catalog-actions brand-image-actions">
+                  <input #categoryImageInput type="file" multiple accept="image/*" (change)="uploadCategoryImages($event)" [disabled]="loading() || !canManageCategories()" />
+                </div>
+
+                @if (selectedCategoryImages().length) {
+                  <div class="product-image-grid">
+                    @for (image of selectedCategoryImages(); track image.id) {
+                      <mat-card class="product-image-card">
+                        <mat-card-content>
+                          <div class="product-image-preview" [style.background-image]="'url(' + image.url + ')'">
+                            @if (image.thumbnail) {
+                              <mat-chip class="catalog-chip-soft product-image-chip">thumbnail</mat-chip>
+                            }
+                          </div>
+                          <div class="catalog-actions">
+                            <button mat-stroked-button type="button" (click)="setCategoryThumbnail(image.id)" [disabled]="loading() || image.thumbnail || !canManageCategories()">Set thumbnail</button>
+                            <button mat-stroked-button color="warn" type="button" (click)="deleteCategoryImage(image.id)" [disabled]="loading() || !canManageCategories()">Xoa</button>
+                          </div>
+                        </mat-card-content>
+                      </mat-card>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </mat-card-content>
         </mat-card>
 
@@ -462,6 +503,13 @@ import { hasPermission } from '../../../core/utils/permission.util';
   styles: [``],
 })
 export class CategoriesPage {
+  @ViewChild('categoryEditorPanel') private categoryEditorPanel?: ElementRef<HTMLElement>;
+  @ViewChild('categoryNameInput') private categoryNameInput?: ElementRef<HTMLInputElement>;
+
+  constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
+    this.loadCategories();
+  }
+
   private readonly categoryApi = inject(CategoryApiService);
   private readonly notifications = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
@@ -494,7 +542,6 @@ export class CategoriesPage {
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED',
     visible: true,
     assignable: true,
-    imageUrl: '',
     iconUrl: '',
     seoTitle: '',
     seoDescription: '',
@@ -509,10 +556,6 @@ export class CategoriesPage {
 
   protected canManageCategories(): boolean {
     return hasPermission(this.authStore.permissions(), 'CATEGORY_MANAGE');
-  }
-
-  constructor() {
-    this.loadCategories();
   }
 
   protected loadCategories(): void {
@@ -615,7 +658,6 @@ export class CategoriesPage {
       status: this.form.status,
       visible: this.form.visible,
       assignable: this.form.assignable,
-      imageUrl: this.form.imageUrl.trim() || null,
       iconUrl: this.form.iconUrl.trim() || null,
       seoTitle: this.form.seoTitle.trim() || null,
       seoDescription: this.form.seoDescription.trim() || null,
@@ -657,11 +699,11 @@ export class CategoriesPage {
     this.form.status = category.status;
     this.form.visible = category.visible;
     this.form.assignable = category.assignable;
-    this.form.imageUrl = category.imageUrl ?? '';
     this.form.iconUrl = category.iconUrl ?? '';
     this.form.seoTitle = category.seoTitle ?? '';
     this.form.seoDescription = category.seoDescription ?? '';
     this.form.seoKeywords = category.seoKeywords ?? '';
+    this.scrollToEditor();
   }
 
   protected availableParents(): Category[] {
@@ -887,10 +929,123 @@ export class CategoriesPage {
     this.form.status = 'ACTIVE';
     this.form.visible = true;
     this.form.assignable = true;
-    this.form.imageUrl = '';
     this.form.iconUrl = '';
     this.form.seoTitle = '';
     this.form.seoDescription = '';
     this.form.seoKeywords = '';
+  }
+
+  protected selectedCategoryImages(): NonNullable<Category['galleryImages']> {
+    const editingId = this.editingId();
+    if (editingId === null) {
+      return [];
+    }
+
+    return (this.categories().find((category) => category.id === editingId)?.galleryImages ?? []).map((image) => ({
+      ...image,
+      url: this.toMediaUrl(image.url) ?? image.url,
+    }));
+  }
+
+  protected selectedCategoryThumbnailUrl(): string | null {
+    const thumbnail = this.selectedCategoryImages().find((image) => image.thumbnail);
+    if (thumbnail) {
+      return this.toMediaUrl(thumbnail.url);
+    }
+
+    const editingId = this.editingId();
+    return editingId === null
+      ? null
+      : this.toMediaUrl(this.categories().find((category) => category.id === editingId)?.imageUrl ?? null);
+  }
+
+  private toMediaUrl(url: string | null | undefined): string | null {
+    return resolveMediaUrl(url, this.config.apiBaseUrl);
+  }
+
+  protected uploadCategoryImages(event: Event): void {
+    const editingId = this.editingId();
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+
+    if (editingId === null || files.length === 0) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.categoryApi.addImages(editingId, files)
+      .pipe(finalize(() => {
+        this.loading.set(false);
+        input.value = '';
+      }))
+      .subscribe({
+        next: (category) => {
+          this.replaceCategory(category);
+          this.notifications.success('Upload category images thanh cong.');
+        },
+        error: (error) => {
+          const mappedError = this.errorMapper.map(error);
+          this.errorMessage.set(mappedError.message);
+          this.notifications.error(mappedError.message);
+        },
+      });
+  }
+
+  protected setCategoryThumbnail(imageId: number): void {
+    const editingId = this.editingId();
+    if (editingId === null) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.categoryApi.setThumbnail(editingId, imageId)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (category) => {
+          this.replaceCategory(category);
+          this.notifications.success('Cap nhat category thumbnail thanh cong.');
+        },
+        error: (error) => {
+          const mappedError = this.errorMapper.map(error);
+          this.errorMessage.set(mappedError.message);
+          this.notifications.error(mappedError.message);
+        },
+      });
+  }
+
+  protected deleteCategoryImage(imageId: number): void {
+    const editingId = this.editingId();
+    if (editingId === null) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.categoryApi.deleteImage(editingId, imageId)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (category) => {
+          this.replaceCategory(category);
+          this.notifications.success('Xoa category image thanh cong.');
+        },
+        error: (error) => {
+          const mappedError = this.errorMapper.map(error);
+          this.errorMessage.set(mappedError.message);
+          this.notifications.error(mappedError.message);
+        },
+      });
+  }
+
+  private replaceCategory(updatedCategory: Category): void {
+    this.categories.update((categories) => categories.map((category) => category.id === updatedCategory.id ? updatedCategory : category));
+  }
+
+  private scrollToEditor(): void {
+    setTimeout(() => {
+      this.categoryEditorPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.categoryNameInput?.nativeElement.focus();
+    }, 0);
   }
 }

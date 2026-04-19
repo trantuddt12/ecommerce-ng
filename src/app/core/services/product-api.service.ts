@@ -3,7 +3,7 @@ import { map, Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
-import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, ProductFilter } from '../models/catalog.models';
+import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, ProductFilter, ProductImage } from '../models/catalog.models';
 import { QueryParamValue } from '../utils/query-params.util';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +31,31 @@ export class ProductApiService {
 
   update(id: number, request: AdminProductUpsertRequest): Observable<AdminProductDetail> {
     return this.baseApi.patch<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.update(id), request).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  listImages(id: number): Observable<ProductImage[]> {
+    return this.baseApi.get<ProductImage[] | ApiEnvelope<ProductImage[]>>(API_ENDPOINTS.product.images(id)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  addImages(id: number, files: File[]): Observable<AdminProductDetail> {
+    return this.baseApi.postFormData<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(
+      API_ENDPOINTS.product.images(id),
+      createProductImagesFormData(files),
+    ).pipe(map((response) => unwrapApiEnvelope(response)));
+  }
+
+  setThumbnail(id: number, imageId: number): Observable<AdminProductDetail> {
+    return this.baseApi.patch<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.thumbnail(id, imageId), {}).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  deleteImage(id: number, imageId: number): Observable<AdminProductDetail> {
+    return this.baseApi.delete<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.deleteImage(id, imageId)).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
   }
@@ -63,5 +88,13 @@ export function createProductFormData(request: AdminProductUpsertRequest, files:
     formData.append('images', file);
   }
 
+  return formData;
+}
+
+function createProductImagesFormData(files: File[]): FormData {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('images', file);
+  }
   return formData;
 }

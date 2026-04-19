@@ -6,6 +6,7 @@ export interface Brand {
   slug: string;
   imageUrl?: string | null;
   image?: ImageAsset | null;
+  galleryImages?: ImageAsset[];
 }
 
 export interface ImageAsset {
