@@ -84,6 +84,14 @@ export interface CategoryTreeNode {
   children: CategoryTreeNode[];
 }
 
+export interface PagedResult<T> {
+  items: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
 export interface CategoryMutationRequest {
   code: string;
   name: string;

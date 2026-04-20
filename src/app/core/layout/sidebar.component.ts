@@ -125,6 +125,9 @@ export class SidebarComponent {
     { label: 'Categories', path: APP_ROUTES.categories, permissions: ['CATEGORY_MANAGE', 'CATEGORY_VIEW'] },
     { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
     { label: 'Attributes', path: APP_ROUTES.attributes, permissions: ['ATTRIBUTE_MANAGE', 'ATTRIBUTE_VIEW'] },
+    { label: 'Checkout', path: APP_ROUTES.checkout },
+    { label: 'My Orders', path: APP_ROUTES.myOrders },
+    { label: 'Admin Orders', path: APP_ROUTES.adminOrders, permissions: ['ORDER_VIEW'] },
     {
       label: 'Operations',
       path: APP_ROUTES.operations,

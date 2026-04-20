@@ -12,12 +12,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { finalize } from 'rxjs';
 import { AppConfig } from '../../../core/config/app-config.model';
-import { Category, CategoryTreeNode } from '../../../core/models/catalog.models';
+import { Category, CategoryTreeNode, PagedResult } from '../../../core/models/catalog.models';
 import { CategoryApiService } from '../../../core/services/category-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthStore } from '../../../core/state/auth.store';
 import { APP_CONFIG } from '../../../core/tokens/app-config.token';
+import { QueryParamValue } from '../../../core/utils/query-params.util';
 import { resolveMediaUrl } from '../../../core/utils/media-url.util';
 import { hasPermission } from '../../../core/utils/permission.util';
 
@@ -262,9 +263,9 @@ import { hasPermission } from '../../../core/utils/permission.util';
               <button mat-stroked-button type="button" (click)="loadCategories()" [disabled]="loading()">Tai lai</button>
             </div>
 
-            <div class="catalog-form-grid">
+            <div class="catalog-form-grid category-filter-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Keyword</mat-label>
+                <mat-label>Search API</mat-label>
                 <input matInput [(ngModel)]="filters.keyword" placeholder="name, code, slug" />
               </mat-form-field>
 
@@ -297,13 +298,37 @@ import { hasPermission } from '../../../core/utils/permission.util';
               </mat-form-field>
             </div>
 
-            <div class="catalog-actions">
+            <div class="catalog-list-toolbar">
+              <mat-form-field appearance="outline" class="category-search-field">
+                <mat-label>Search in current page</mat-label>
+                <input matInput [(ngModel)]="tableQuery" placeholder="Tim nhanh theo path, parent, code" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="category-page-size-field">
+                <mat-label>Rows per page</mat-label>
+                <mat-select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+                  <mat-option [value]="5">5</mat-option>
+                  <mat-option [value]="10">10</mat-option>
+                  <mat-option [value]="20">20</mat-option>
+                  <mat-option [value]="50">50</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="catalog-actions category-filter-actions">
               <button mat-stroked-button type="button" (click)="applyFilters()" [disabled]="loading()">Loc danh sach</button>
               <button mat-stroked-button type="button" (click)="resetFilters()" [disabled]="loading()">Bo loc</button>
             </div>
 
-            @if (categories().length) {
-              <table mat-table [dataSource]="sortedCategories()" class="catalog-table category-table">
+            @if (filteredCategoryCount()) {
+              <div class="category-list-summary">
+                <span>Hien {{ pageRangeLabel() }} / {{ totalElements() }} category</span>
+                @if (tableQuery.trim()) {
+                  <span>Search current page: "{{ tableQuery.trim() }}"</span>
+                }
+              </div>
+
+              <table mat-table [dataSource]="filteredCategories()" class="catalog-table category-table">
                 <ng-container matColumnDef="name">
                   <th mat-header-cell *matHeaderCellDef>
                     <button class="catalog-sort-button" type="button" (click)="toggleSort('name')">
@@ -388,8 +413,14 @@ import { hasPermission } from '../../../core/utils/permission.util';
                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                 <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
               </table>
+
+              <div class="category-pagination">
+                <button mat-stroked-button type="button" (click)="goToPreviousPage()" [disabled]="loading() || currentPage() === 1">Trang truoc</button>
+                <span>Trang {{ currentPage() }} / {{ totalPages() }}</span>
+                <button mat-stroked-button type="button" (click)="goToNextPage()" [disabled]="loading() || currentPage() === totalPages()">Trang sau</button>
+              </div>
             } @else {
-              <div class="catalog-empty">Chua co category nao.</div>
+              <div class="catalog-empty">{{ tableQuery.trim() ? 'Khong tim thay category phu hop trong trang hien tai.' : 'Chua co category nao.' }}</div>
             }
           </mat-card-content>
         </mat-card>
@@ -500,7 +531,139 @@ import { hasPermission } from '../../../core/utils/permission.util';
       </section>
     </section>
   `,
-  styles: [``],
+  styles: [`
+    .category-page {
+      gap: 1.5rem;
+    }
+
+    .category-filter-grid,
+    .catalog-list-toolbar {
+      margin-bottom: 0.75rem;
+    }
+
+    .catalog-list-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(12rem, 0.75fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .category-search-field,
+    .category-page-size-field {
+      width: 100%;
+    }
+
+    .category-filter-actions {
+      margin-bottom: 0.75rem;
+    }
+
+    .category-list-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+      color: rgba(15, 23, 42, 0.72);
+      font-size: 0.92rem;
+    }
+
+    .category-pagination {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .category-tree-surface {
+      display: grid;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-radius: 1rem;
+      background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.88));
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    .deleted-surface {
+      background: linear-gradient(180deg, rgba(255, 247, 237, 0.92), rgba(255, 241, 242, 0.88));
+      border-color: rgba(251, 146, 60, 0.22);
+    }
+
+    .catalog-tree-node {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0.9rem 1rem;
+      border-radius: 0.9rem;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .deleted-surface .catalog-tree-node {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .catalog-tree-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .catalog-tree-row strong {
+      overflow-wrap: anywhere;
+    }
+
+    .catalog-tree-row span {
+      flex-shrink: 0;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      color: rgba(30, 64, 175, 0.95);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .deleted-surface .catalog-tree-row span {
+      background: rgba(234, 88, 12, 0.12);
+      color: rgba(154, 52, 18, 0.95);
+    }
+
+    .catalog-tree-child {
+      position: relative;
+    }
+
+    .catalog-tree-child::before {
+      content: '';
+      position: absolute;
+      left: 0.85rem;
+      top: 0.8rem;
+      bottom: 0.8rem;
+      width: 2px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(96, 165, 250, 0.55), rgba(59, 130, 246, 0.15));
+    }
+
+    @media (max-width: 959px) {
+      .catalog-list-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .category-pagination {
+        justify-content: flex-start;
+      }
+
+      .catalog-tree-row {
+        flex-direction: column;
+      }
+
+      .catalog-tree-row span {
+        align-self: flex-start;
+      }
+    }
+  `],
 })
 export class CategoriesPage {
   @ViewChild('categoryEditorPanel') private categoryEditorPanel?: ElementRef<HTMLElement>;
@@ -525,7 +688,12 @@ export class CategoriesPage {
     column: 'name',
     direction: 'asc',
   });
+  protected readonly currentPage = signal(1);
+  protected readonly totalPages = signal(1);
+  protected readonly totalElements = signal(0);
   protected readonly displayedColumns = ['name', 'parent', 'status', 'children', 'visibility', 'products', 'actions'];
+  protected tableQuery = '';
+  protected pageSize = 10;
   protected readonly filters = {
     keyword: '',
     status: null as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' | null,
@@ -561,11 +729,11 @@ export class CategoriesPage {
   protected loadCategories(): void {
     this.loading.set(true);
     this.errorMessage.set('');
-    this.categoryApi.list(this.buildListFilters())
+    this.categoryApi.listPage(this.buildListFilters())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (categories) => {
-          this.categories.set(categories);
+          this.applyCategoryPage(categories);
           this.loadTree();
           this.loadDeletedCategories();
         },
@@ -594,9 +762,43 @@ export class CategoriesPage {
     const { column, direction } = this.sortState();
     const factor = direction === 'asc' ? 1 : -1;
 
-    return this.categories()
+    return this.filteredCategories()
       .slice()
       .sort((left, right) => factor * this.compareCategories(left, right, column));
+  }
+
+  protected filteredCategories(): Category[] {
+    const query = this.tableQuery.trim().toLowerCase();
+    if (!query) {
+      return this.categories();
+    }
+
+    return this.categories().filter((category) => {
+      const parentName = category.parentName ?? this.resolveParentName(category.parentId);
+      return [
+        category.name,
+        category.code,
+        category.slug,
+        category.path,
+        parentName,
+        category.status,
+      ].some((value) => (value ?? '').toLowerCase().includes(query));
+    });
+  }
+
+  protected filteredCategoryCount(): number {
+    return this.filteredCategories().length;
+  }
+
+  protected pageRangeLabel(): string {
+    const total = this.totalElements();
+    if (total === 0) {
+      return '0-0';
+    }
+
+    const start = (this.currentPage() - 1) * this.pageSize + 1;
+    const end = start + this.categories().length - 1;
+    return `${start}-${end}`;
   }
 
   protected toggleSort(column: 'name' | 'parent' | 'status' | 'children' | 'visibility' | 'products'): void {
@@ -606,10 +808,12 @@ export class CategoriesPage {
         column,
         direction: current.direction === 'asc' ? 'desc' : 'asc',
       });
+      this.loadCategories();
       return;
     }
 
     this.sortState.set({ column, direction: 'asc' });
+    this.loadCategories();
   }
 
   protected sortIndicator(column: 'name' | 'parent' | 'status' | 'children' | 'visibility' | 'products'): string {
@@ -622,6 +826,8 @@ export class CategoriesPage {
   }
 
   protected applyFilters(): void {
+    this.currentPage.set(1);
+    this.sortState.set({ column: 'name', direction: 'asc' });
     this.loadCategories();
   }
 
@@ -630,15 +836,47 @@ export class CategoriesPage {
     this.filters.status = null;
     this.filters.visible = null;
     this.filters.assignable = null;
+    this.tableQuery = '';
+    this.currentPage.set(1);
+    this.sortState.set({ column: 'name', direction: 'asc' });
     this.loadCategories();
   }
 
-  protected buildListFilters(): Record<string, string | boolean | null | undefined> {
+  protected goToPreviousPage(): void {
+    const nextPage = Math.max(1, this.currentPage() - 1);
+    if (nextPage === this.currentPage()) {
+      return;
+    }
+
+    this.currentPage.set(nextPage);
+    this.loadCategories();
+  }
+
+  protected goToNextPage(): void {
+    const nextPage = Math.min(this.totalPages(), this.currentPage() + 1);
+    if (nextPage === this.currentPage()) {
+      return;
+    }
+
+    this.currentPage.set(nextPage);
+    this.loadCategories();
+  }
+
+  protected onPageSizeChange(): void {
+    this.currentPage.set(1);
+    this.loadCategories();
+  }
+
+  protected buildListFilters(): Record<string, QueryParamValue> {
     return {
       keyword: this.filters.keyword.trim() || undefined,
       status: this.filters.status,
       visible: this.filters.visible,
       assignable: this.filters.assignable,
+      page: this.currentPage() - 1,
+      size: this.pageSize,
+      sortBy: this.mapSortColumnToApi(this.sortState().column),
+      sortDir: this.sortState().direction,
     };
   }
 
@@ -1040,6 +1278,24 @@ export class CategoriesPage {
 
   private replaceCategory(updatedCategory: Category): void {
     this.categories.update((categories) => categories.map((category) => category.id === updatedCategory.id ? updatedCategory : category));
+  }
+
+  private applyCategoryPage(page: PagedResult<Category>): void {
+    this.categories.set(page.items);
+    this.totalElements.set(page.totalElements);
+    this.totalPages.set(Math.max(1, page.totalPages));
+    this.currentPage.set(page.page + 1);
+  }
+
+  private mapSortColumnToApi(column: 'name' | 'parent' | 'status' | 'children' | 'visibility' | 'products'): 'name' | 'status' | 'sortOrder' {
+    switch (column) {
+      case 'name':
+        return 'name';
+      case 'status':
+        return 'status';
+      default:
+        return 'sortOrder';
+    }
   }
 
   private scrollToEditor(): void {

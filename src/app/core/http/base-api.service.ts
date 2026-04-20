@@ -33,6 +33,10 @@ export class BaseApiService {
       .pipe(timeout(this.config.requestTimeoutMs));
   }
 
+  put<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
+    return this.http.put<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  }
+
   patch<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
     return this.http.patch<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
   }

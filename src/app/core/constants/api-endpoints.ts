@@ -97,4 +97,22 @@ export const API_ENDPOINTS = {
   search: {
     brand: '/search/brand',
   },
+  cart: {
+    my: '/carts/me',
+    upsertItem: '/carts/me/items',
+    removeItem: (variantId: string | number) => `/carts/me/items/${variantId}`,
+    applyVoucher: '/carts/me/voucher/apply',
+    removeVoucher: '/carts/me/voucher',
+    pricingPreview: '/carts/me/pricing-preview',
+    checkout: '/carts/me/checkout',
+  },
+  order: {
+    list: '/orders',
+    create: '/orders',
+    byId: (id: string | number) => `/orders/${id}`,
+    adminStatus: (id: string | number) => `/orders/${id}/admin-status`,
+    myList: '/orders/me',
+    myById: (id: string | number) => `/orders/me/${id}`,
+    myCancel: (id: string | number) => `/orders/me/${id}/cancel`,
+  },
 } as const;

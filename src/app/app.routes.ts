@@ -15,6 +15,11 @@ import { ProductsPage } from './features/catalog/products/products.page';
 import { DashboardPage } from './features/dashboard/dashboard.page';
 import { RolesPage } from './features/management/roles/roles.page';
 import { UsersPage } from './features/management/users/users.page';
+import { AdminOrderDetailPage } from './features/order/admin-order-detail/admin-order-detail.page';
+import { AdminOrdersPage } from './features/order/admin-orders/admin-orders.page';
+import { CheckoutPage } from './features/order/checkout/checkout.page';
+import { MyOrderDetailPage } from './features/order/my-order-detail/my-order-detail.page';
+import { MyOrdersPage } from './features/order/my-orders/my-orders.page';
 import { SearchPage } from './features/search/search.page';
 import { ForbiddenPage } from './features/system/forbidden.page';
 import { NotFoundPage } from './features/system/not-found.page';
@@ -105,6 +110,30 @@ export const routes: Routes = [
         component: SearchPage,
         canActivate: [permissionGuard],
         data: { permissions: ['BRAND_VIEW'] },
+      },
+      {
+        path: 'checkout',
+        component: CheckoutPage,
+      },
+      {
+        path: 'orders/me',
+        component: MyOrdersPage,
+      },
+      {
+        path: 'orders/me/:id',
+        component: MyOrderDetailPage,
+      },
+      {
+        path: 'orders',
+        component: AdminOrdersPage,
+        canActivate: [permissionGuard],
+        data: { permissions: ['ORDER_VIEW'] },
+      },
+      {
+        path: 'orders/:id',
+        component: AdminOrderDetailPage,
+        canActivate: [permissionGuard],
+        data: { permissions: ['ORDER_VIEW'] },
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

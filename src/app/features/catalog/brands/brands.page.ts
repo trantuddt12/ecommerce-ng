@@ -159,8 +159,8 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
               </mat-form-field>
             </div>
 
-            @if (filteredBrands().length) {
-              <table mat-table [dataSource]="filteredBrands()" class="catalog-table">
+            @if (sortedBrands().length) {
+              <table mat-table [dataSource]="sortedBrands()" class="catalog-table">
                 <ng-container matColumnDef="image">
                   <th mat-header-cell *matHeaderCellDef>Image</th>
                   <td mat-cell *matCellDef="let brand">
@@ -173,7 +173,11 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
                 </ng-container>
 
                 <ng-container matColumnDef="name">
-                  <th mat-header-cell *matHeaderCellDef>Brand</th>
+                  <th mat-header-cell *matHeaderCellDef>
+                    <button class="catalog-sort-button" type="button" (click)="toggleSort('name')">
+                      Brand {{ sortIndicator('name') }}
+                    </button>
+                  </th>
                   <td mat-cell *matCellDef="let brand">
                     <div>
                       <strong>{{ brand.name }}</strong>
@@ -186,14 +190,22 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
                 </ng-container>
 
                 <ng-container matColumnDef="generic">
-                  <th mat-header-cell *matHeaderCellDef>Generic</th>
+                  <th mat-header-cell *matHeaderCellDef>
+                    <button class="catalog-sort-button" type="button" (click)="toggleSort('generic')">
+                      Generic {{ sortIndicator('generic') }}
+                    </button>
+                  </th>
                   <td mat-cell *matCellDef="let brand">
                     <mat-chip [class.catalog-chip-success]="brand.generic" [class.catalog-chip-neutral]="!brand.generic">{{ brand.generic ? 'Yes' : 'No' }}</mat-chip>
                   </td>
                 </ng-container>
 
                 <ng-container matColumnDef="description">
-                  <th mat-header-cell *matHeaderCellDef>Description</th>
+                  <th mat-header-cell *matHeaderCellDef>
+                    <button class="catalog-sort-button" type="button" (click)="toggleSort('description')">
+                      Description {{ sortIndicator('description') }}
+                    </button>
+                  </th>
                   <td mat-cell *matCellDef="let brand">{{ brand.description || '-' }}</td>
                 </ng-container>
 
@@ -351,6 +363,10 @@ export class BrandsPage {
   protected readonly editingId = signal<number | null>(null);
   protected readonly errorMessage = signal('');
   protected readonly recentlyUploadedImageId = signal<number | null>(null);
+  protected readonly sortState = signal<{ column: 'name' | 'generic' | 'description'; direction: 'asc' | 'desc' }>({
+    column: 'name',
+    direction: 'asc',
+  });
   protected readonly displayedColumns = ['image', 'name', 'generic', 'description', 'actions'];
   protected brandQuery = '';
   protected readonly form = {
@@ -480,6 +496,54 @@ export class BrandsPage {
       || brand.slug.toLowerCase().includes(query)
       || (brand.description ?? '').toLowerCase().includes(query),
     );
+  }
+
+  protected sortedBrands(): Brand[] {
+    const { column, direction } = this.sortState();
+    const factor = direction === 'asc' ? 1 : -1;
+
+    return this.filteredBrands()
+      .slice()
+      .sort((left, right) => factor * this.compareBrands(left, right, column));
+  }
+
+  protected toggleSort(column: 'name' | 'generic' | 'description'): void {
+    const current = this.sortState();
+    if (current.column === column) {
+      this.sortState.set({
+        column,
+        direction: current.direction === 'asc' ? 'desc' : 'asc',
+      });
+      return;
+    }
+
+    this.sortState.set({ column, direction: 'asc' });
+  }
+
+  protected sortIndicator(column: 'name' | 'generic' | 'description'): string {
+    const current = this.sortState();
+    if (current.column !== column) {
+      return '';
+    }
+
+    return current.direction === 'asc' ? '↑' : '↓';
+  }
+
+  private compareBrands(left: Brand, right: Brand, column: 'name' | 'generic' | 'description'): number {
+    switch (column) {
+      case 'name':
+        return this.compareBrandText(left.name, right.name) || this.compareBrandText(left.slug, right.slug);
+      case 'generic':
+        return Number(left.generic) - Number(right.generic) || this.compareBrandText(left.name, right.name);
+      case 'description':
+        return this.compareBrandText(left.description, right.description) || this.compareBrandText(left.name, right.name);
+      default:
+        return 0;
+    }
+  }
+
+  private compareBrandText(left: string | null | undefined, right: string | null | undefined): number {
+    return (left ?? '').localeCompare(right ?? '');
   }
 
   protected selectedBrandImageUrl(): string | null {

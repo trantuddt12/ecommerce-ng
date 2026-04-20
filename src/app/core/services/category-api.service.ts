@@ -7,20 +7,41 @@ import {
   CategoryMergeRequest,
   CategoryMoveRequest,
   CategoryMutationRequest,
+  PagedResult,
   CategoryReorderRequest,
   CategoryTreeNode,
   ImageAsset,
 } from '../models/catalog.models';
 import { BaseApiService } from '../http/base-api.service';
+import { QueryParamValue } from '../utils/query-params.util';
+
+interface PageMeta {
+  _totalElements?: number;
+  _totalPages?: number;
+  _currentPage?: number;
+  _pageSize?: number;
+}
+
+interface PagedApiEnvelope<T> {
+  data: T[];
+  page?: PageMeta;
+  timestamp?: string | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CategoryApiService {
   private readonly baseApi = inject(BaseApiService);
 
-  list(filters?: Record<string, string | number | boolean | null | undefined>): Observable<Category[]> {
+  list(filters?: Record<string, QueryParamValue>): Observable<Category[]> {
     return this.baseApi.get<Category[] | ApiEnvelope<Category[]>>(API_ENDPOINTS.category.list, filters).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
+  }
+
+  listPage(filters?: Record<string, QueryParamValue>): Observable<PagedResult<Category>> {
+    return this.baseApi
+      .get<PagedApiEnvelope<Category> | ApiEnvelope<Category[]>>(API_ENDPOINTS.category.list, filters)
+      .pipe(map((response) => this.mapPagedCategories(response, filters)));
   }
 
   tree(filters?: Record<string, string | number | boolean | null | undefined>): Observable<CategoryTreeNode[]> {
@@ -102,5 +123,22 @@ export class CategoryApiService {
     return this.baseApi.get<ImageAsset[] | ApiEnvelope<ImageAsset[]>>(API_ENDPOINTS.category.images(id)).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
+  }
+
+  private mapPagedCategories(
+    response: PagedApiEnvelope<Category> | ApiEnvelope<Category[]>,
+    fallback?: Record<string, QueryParamValue>,
+  ): PagedResult<Category> {
+    const envelope = response as PagedApiEnvelope<Category>;
+    const items = Array.isArray(envelope?.data) ? envelope.data : [];
+    const page = envelope?.page;
+
+    return {
+      items,
+      totalElements: page?._totalElements ?? items.length,
+      totalPages: page?._totalPages ?? 1,
+      page: page?._currentPage ?? Number(fallback?.['page'] ?? 0),
+      size: page?._pageSize ?? Number(fallback?.['size'] ?? items.length),
+    };
   }
 }

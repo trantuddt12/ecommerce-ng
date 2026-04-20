@@ -1,0 +1,210 @@
+export type OrderStatus =
+  | 'PENDING_CONFIRMATION'
+  | 'CONFIRMED'
+  | 'PACKING'
+  | 'READY_TO_SHIP'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'DELIVERY_FAILED'
+  | 'RETURNED';
+
+export type PaymentStatus =
+  | 'UNPAID'
+  | 'PARTIALLY_PAID'
+  | 'PAID'
+  | 'REFUND_PENDING'
+  | 'REFUNDED'
+  | 'FAILED';
+
+export type FulfillmentStatus =
+  | 'UNFULFILLED'
+  | 'ALLOCATED'
+  | 'PICKING'
+  | 'PACKED'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'FAILED'
+  | 'RETURNED';
+
+export interface OrderListItem {
+  id: number;
+  orderNumber: string;
+  orderStatus: OrderStatus | string;
+  paymentStatus: PaymentStatus | string;
+  fulfillmentStatus: FulfillmentStatus | string;
+  customerId: number | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  totalItems: number;
+  grandTotal: number;
+  currencyCode: string | null;
+  placedAt: string | null;
+}
+
+export interface OrderItem {
+  id: number;
+  productId: number;
+  variantId: number;
+  productCode: string;
+  productName: string;
+  variantName: string;
+  variantAttributes: string;
+  sku: string;
+  imageUrl: string | null;
+  quantity: number;
+  unitPrice: number;
+  compareAtPrice: number | null;
+  lineSubtotal: number;
+}
+
+export interface OrderStatusHistory {
+  id: number;
+  orderStatus: OrderStatus | string;
+  paymentStatus: PaymentStatus | string;
+  fulfillmentStatus: FulfillmentStatus | string;
+  changedBy: string | null;
+  note: string | null;
+  changedAt: string | null;
+}
+
+export interface OrderDetail {
+  id: number;
+  orderNumber: string;
+  orderStatus: OrderStatus | string;
+  paymentStatus: PaymentStatus | string;
+  fulfillmentStatus: FulfillmentStatus | string;
+  customerId: number | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  provinceCode: string | null;
+  districtCode: string | null;
+  wardCode: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  shippingMethodCode: string | null;
+  shippingMethodName: string | null;
+  paymentMethodCode: string | null;
+  paymentMethodName: string | null;
+  trackingNumber: string | null;
+  customerNote: string | null;
+  internalNote: string | null;
+  cancelReason: string | null;
+  totalItems: number;
+  subtotalAmount: number;
+  shippingFee: number;
+  discountAmount: number;
+  grandTotal: number;
+  currencyCode: string | null;
+  placedAt: string | null;
+  inventoryReservedAt: string | null;
+  inventoryDeductedAt: string | null;
+  cancelledAt: string | null;
+  deliveredAt: string | null;
+  items: OrderItem[];
+  histories: OrderStatusHistory[];
+}
+
+export interface OrderAdminStatusUpdateRequest {
+  orderStatus?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  fulfillmentStatus?: FulfillmentStatus;
+  trackingNumber?: string | null;
+  cancelReason?: string | null;
+  internalNote?: string | null;
+}
+
+export interface CustomerOrderCancelRequest {
+  cancelReason: string;
+}
+
+export interface OrderListFilters {
+  orderNumber?: string | null;
+  orderStatus?: string | null;
+  paymentStatus?: string | null;
+  customerPhone?: string | null;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+export interface CartItem {
+  id: number;
+  productId: number;
+  variantId: number;
+  productCode: string;
+  productName: string;
+  variantName: string;
+  variantAttributes: string;
+  sku: string;
+  imageUrl: string | null;
+  quantity: number;
+  unitPrice: number;
+  compareAtPrice: number | null;
+  lineSubtotal: number;
+  availableQty: number | null;
+}
+
+export interface Cart {
+  id: number;
+  customerId: number | null;
+  status: string;
+  voucherCode: string | null;
+  voucherType: string | null;
+  voucherValue: number | null;
+  totalItems: number;
+  subtotalAmount: number;
+  discountAmount: number;
+  grandTotal: number;
+  currencyCode: string | null;
+  updatedAt: string | null;
+  items: CartItem[];
+}
+
+export interface CheckoutPricingPreview {
+  totalItems: number;
+  subtotalAmount: number;
+  discountAmount: number;
+  shippingFee: number;
+  grandTotal: number;
+  currencyCode: string | null;
+  voucherCode: string | null;
+}
+
+export interface CartItemUpsertRequest {
+  variantId: number;
+  quantity: number;
+}
+
+export interface CartApplyVoucherRequest {
+  voucherCode: string;
+}
+
+export interface CheckoutFromCartRequest {
+  recipientName: string;
+  recipientPhone: string;
+  provinceCode: string;
+  districtCode: string;
+  wardCode: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  shippingMethodCode: string;
+  shippingMethodName: string;
+  paymentMethodCode: string;
+  paymentMethodName: string;
+  customerNote?: string | null;
+}
