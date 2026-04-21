@@ -74,6 +74,12 @@ export class CategoryApiService {
     );
   }
 
+  updateStatus(id: number, status: Category['status']): Observable<Category> {
+    return this.baseApi.patch<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.status(id), { status }).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
   move(id: number, request: CategoryMoveRequest): Observable<Category> {
     return this.baseApi.patch<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.move(id), request).pipe(
       map((response) => unwrapApiEnvelope(response)),

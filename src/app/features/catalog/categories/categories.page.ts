@@ -403,8 +403,13 @@ import { hasPermission } from '../../../core/utils/permission.util';
                   <td mat-cell *matCellDef="let category">
                     <div class="catalog-actions">
                       <button mat-stroked-button type="button" (click)="startEdit(category)" [disabled]="!canManageCategories()">Sua</button>
+                      <button mat-stroked-button type="button" (click)="toggleCategoryStatus(category)" [disabled]="loading() || !canManageCategories()">
+                        {{ category.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button mat-stroked-button type="button" (click)="archiveCategory(category)" [disabled]="loading() || category.status === 'ARCHIVED' || !canManageCategories()">
+                        Archive
+                      </button>
                       <button mat-stroked-button type="button" (click)="promoteCategory(category)" [disabled]="loading() || !canManageCategories()">Len dau</button>
-                      <button mat-flat-button color="warn" type="button" (click)="deactivateCategory(category)" [disabled]="loading() || category.status !== 'ACTIVE' || !canManageCategories()">Deactivate</button>
                       <button mat-stroked-button type="button" (click)="softDeleteCategory(category)" [disabled]="loading() || !canManageCategories()">Delete</button>
                     </div>
                   </td>
@@ -1056,6 +1061,40 @@ export class CategoriesPage {
             this.resetForm();
           }
           this.loadCategories();
+        },
+        error: (error) => {
+          const mappedError = this.errorMapper.map(error);
+          this.errorMessage.set(mappedError.message);
+          this.notifications.error(mappedError.message);
+        },
+      });
+  }
+
+  protected toggleCategoryStatus(category: Category): void {
+    const nextStatus = category.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    this.updateCategoryStatus(category, nextStatus);
+  }
+
+  protected archiveCategory(category: Category): void {
+    this.updateCategoryStatus(category, 'ARCHIVED');
+  }
+
+  protected updateCategoryStatus(category: Category, status: Category['status']): void {
+    if (category.status === status) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.categoryApi.updateStatus(category.id, status)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (updatedCategory) => {
+          this.replaceCategory(updatedCategory);
+          if (this.editingId() === updatedCategory.id) {
+            this.startEdit(updatedCategory);
+          }
+          this.notifications.success(`Da chuyen category ${category.name} sang ${status}.`);
         },
         error: (error) => {
           const mappedError = this.errorMapper.map(error);

@@ -221,59 +221,61 @@ interface DuplicateSignatureInfo {
             </div>
 
             @if (products().length) {
-              <table mat-table [dataSource]="products()" class="catalog-table">
-                <ng-container matColumnDef="name">
-                  <th mat-header-cell *matHeaderCellDef>Product</th>
-                  <td mat-cell *matCellDef="let product">
-                    <div>
-                      <strong>{{ product.name }}</strong>
-                      <div class="catalog-inline-meta">
-                        <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
-                        <mat-chip class="catalog-chip-soft">{{ product.code }}</mat-chip>
-                        <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
+              <div class="product-table-shell">
+                <table mat-table [dataSource]="products()" class="catalog-table product-table">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef>Product</th>
+                    <td mat-cell *matCellDef="let product">
+                      <div>
+                        <strong>{{ product.name }}</strong>
+                        <div class="catalog-inline-meta">
+                          <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
+                          <mat-chip class="catalog-chip-soft">{{ product.code }}</mat-chip>
+                          <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
+                        </div>
+                        <div class="catalog-inline-meta">/{{ product.slug }}</div>
                       </div>
-                      <div class="catalog-inline-meta">/{{ product.slug }}</div>
-                    </div>
-                  </td>
-                </ng-container>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="category">
-                  <th mat-header-cell *matHeaderCellDef>Category</th>
-                  <td mat-cell *matCellDef="let product">{{ resolveCategoryName(product.categoryId) }}</td>
-                </ng-container>
+                  <ng-container matColumnDef="category">
+                    <th mat-header-cell *matHeaderCellDef>Category</th>
+                    <td mat-cell *matCellDef="let product">{{ resolveCategoryName(product.categoryId) }}</td>
+                  </ng-container>
 
-                <ng-container matColumnDef="price">
-                  <th mat-header-cell *matHeaderCellDef>Price</th>
-                  <td mat-cell *matCellDef="let product">{{ product.price ?? '-' }}</td>
-                </ng-container>
+                  <ng-container matColumnDef="price">
+                    <th mat-header-cell *matHeaderCellDef>Price</th>
+                    <td mat-cell *matCellDef="let product">{{ product.price ?? '-' }}</td>
+                  </ng-container>
 
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let product">
-                    <mat-chip [class.catalog-chip-success]="product.status === 'ACTIVE'" [class.catalog-chip-neutral]="product.status !== 'ACTIVE'">
-                      {{ product.status || 'DRAFT' }}
-                    </mat-chip>
-                    <div class="catalog-inline-meta">{{ product.visibility || 'CATALOG_SEARCH' }}</div>
-                  </td>
-                </ng-container>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let product">
+                      <mat-chip [class.catalog-chip-success]="product.status === 'ACTIVE'" [class.catalog-chip-neutral]="product.status !== 'ACTIVE'">
+                        {{ product.status || 'DRAFT' }}
+                      </mat-chip>
+                      <div class="catalog-inline-meta">{{ product.visibility || 'CATALOG_SEARCH' }}</div>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="variants">
-                  <th mat-header-cell *matHeaderCellDef>Variants</th>
-                  <td mat-cell *matCellDef="let product">{{ product.variantCount }}</td>
-                </ng-container>
+                  <ng-container matColumnDef="variants">
+                    <th mat-header-cell *matHeaderCellDef>Variants</th>
+                    <td mat-cell *matCellDef="let product">{{ product.variantCount }}</td>
+                  </ng-container>
 
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef>Actions</th>
-                  <td mat-cell *matCellDef="let product">
-                    <div class="catalog-actions catalog-actions-inline">
-                      <button mat-stroked-button type="button" (click)="editProduct(product)">Sua</button>
-                    </div>
-                  </td>
-                </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let product">
+                      <div class="catalog-actions catalog-actions-inline">
+                        <button mat-stroked-button type="button" (click)="editProduct(product)">Sua</button>
+                      </div>
+                    </td>
+                  </ng-container>
 
-                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-              </table>
+                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                </table>
+              </div>
             } @else if (!loading()) {
               <div class="catalog-empty">Chua co product nao.</div>
             }
@@ -300,7 +302,7 @@ interface DuplicateSignatureInfo {
             <div class="product-editor-shell">
               <section class="product-editor-section">
                 <div class="product-section-title">
-                  <mat-icon>inventory_2</mat-icon>
+                  <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">inventory_2</mat-icon>
                   <span>Thong tin co ban</span>
                 </div>
 
@@ -366,7 +368,7 @@ interface DuplicateSignatureInfo {
 
               <section class="product-editor-section">
                 <div class="product-section-title">
-                  <mat-icon>travel_explore</mat-icon>
+                  <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">travel_explore</mat-icon>
                   <span>SEO</span>
                 </div>
 
@@ -393,7 +395,7 @@ interface DuplicateSignatureInfo {
               <section class="product-editor-section">
                 <div class="product-section-title-row">
                   <div class="product-section-title">
-                    <mat-icon>schema</mat-icon>
+                    <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">schema</mat-icon>
                     <span>Category schema</span>
                   </div>
 
@@ -435,7 +437,7 @@ interface DuplicateSignatureInfo {
                         </div>
 
                         <button mat-icon-button color="warn" type="button" (click)="removeVariant($index)" [disabled]="editor().variants.length === 1">
-                          <mat-icon>delete</mat-icon>
+                          <mat-icon fontSet="material-symbols-outlined">delete</mat-icon>
                         </button>
                       </div>
 
@@ -518,7 +520,7 @@ interface DuplicateSignatureInfo {
                             </mat-form-field>
 
                             <button mat-icon-button color="warn" type="button" (click)="removeAxisSelection(variant, $index)" [disabled]="variant.axisSelections.length === 1">
-                              <mat-icon>remove_circle</mat-icon>
+                              <mat-icon fontSet="material-symbols-outlined">remove_circle</mat-icon>
                             </button>
                           </div>
                         }
@@ -539,7 +541,7 @@ interface DuplicateSignatureInfo {
 
               <section class="product-editor-section">
                 <div class="product-section-title">
-                  <mat-icon>view_module</mat-icon>
+                  <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">view_module</mat-icon>
                   <span>Combination preview</span>
                 </div>
 
@@ -568,7 +570,7 @@ interface DuplicateSignatureInfo {
 
               <section class="product-editor-section">
                 <div class="product-section-title">
-                  <mat-icon>image</mat-icon>
+                  <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">image</mat-icon>
                   <span>Media</span>
                 </div>
 
@@ -655,6 +657,26 @@ interface DuplicateSignatureInfo {
         gap: 1.25rem;
       }
 
+      .product-list-panel,
+      .product-editor-panel {
+        min-width: 0;
+        align-self: start;
+      }
+
+      .product-editor-panel {
+        position: sticky;
+        top: 1.5rem;
+      }
+
+      .product-table-shell {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .product-table {
+        min-width: 860px;
+      }
+
       .product-editor-section {
         display: grid;
         gap: 1rem;
@@ -670,6 +692,14 @@ interface DuplicateSignatureInfo {
       .product-section-title {
         font-weight: 700;
         color: #0f172a;
+      }
+
+      .product-section-icon {
+        flex: 0 0 auto;
+        font-size: 1.3rem;
+        width: 1.3rem;
+        height: 1.3rem;
+        overflow: hidden;
       }
 
       .product-section-title-row {
@@ -732,9 +762,18 @@ interface DuplicateSignatureInfo {
 
       .product-axis-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.75rem;
         align-items: start;
+      }
+
+      .product-axis-row > * {
+        min-width: 0;
+      }
+
+      .product-axis-row > button {
+        grid-column: 1 / -1;
+        justify-self: end;
       }
 
       .product-upload-box {
@@ -799,6 +838,11 @@ interface DuplicateSignatureInfo {
       @media (max-width: 1024px) {
         .product-hero-grid {
           grid-template-columns: 1fr;
+        }
+
+        .product-editor-panel {
+          position: static;
+          top: auto;
         }
       }
 
