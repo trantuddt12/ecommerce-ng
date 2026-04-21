@@ -886,6 +886,10 @@ export class CategoriesPage {
       return;
     }
 
+    const editingCategory = this.editingId() === null
+      ? null
+      : this.categories().find((category) => category.id === this.editingId()) ?? null;
+
     const request = {
       code: this.form.code.trim().toLowerCase(),
       name: this.form.name.trim(),
@@ -900,7 +904,7 @@ export class CategoriesPage {
       seoTitle: this.form.seoTitle.trim() || null,
       seoDescription: this.form.seoDescription.trim() || null,
       seoKeywords: this.form.seoKeywords.trim() || null,
-      attributes: [],
+      attributes: editingCategory?.attributes ?? [],
     };
 
     this.loading.set(true);
@@ -1300,8 +1304,8 @@ export class CategoriesPage {
 
   private scrollToEditor(): void {
     setTimeout(() => {
-      this.categoryEditorPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      this.categoryNameInput?.nativeElement.focus();
+      this.categoryEditorPanel?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.categoryNameInput?.nativeElement?.focus();
     }, 0);
   }
 }

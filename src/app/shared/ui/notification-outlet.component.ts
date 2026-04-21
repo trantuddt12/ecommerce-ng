@@ -19,11 +19,14 @@ import { NotificationService } from '../../core/services/notification.service';
   styles: [`
     .notification-stack {
       position: fixed;
-      top: 1rem;
-      right: 1rem;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      align-items: end;
+      justify-items: end;
       display: grid;
       gap: 0.75rem;
       z-index: 1100;
+      pointer-events: none;
     }
 
     .notification {
@@ -34,6 +37,7 @@ import { NotificationService } from '../../core/services/notification.service';
       font: inherit;
       text-align: left;
       cursor: pointer;
+      pointer-events: auto;
     }
 
     .success {
@@ -46,6 +50,21 @@ import { NotificationService } from '../../core/services/notification.service';
 
     .info {
       background: #1d4ed8;
+    }
+
+    @media (max-width: 720px) {
+      .notification-stack {
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: 0.75rem;
+        justify-items: stretch;
+      }
+
+      .notification {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+      }
     }
   `],
 })
