@@ -319,17 +319,33 @@ Luu y:
 - Method: `POST`
 - URL: `/auth/sendotp`
 - Auth: public
-- Params query:
-  - `pOtpType`
-  - `pToEmail`
+
+Request body:
+
+```json
+{
+  "purpose": "FORGOT_PASSWORD",
+  "email": "user@example.com"
+}
+```
 
 Vi du:
 
-`POST /auth/sendotp?pOtpType=RESET_PASSWORD&pToEmail=user@example.com`
+`POST /auth/sendotp`
 
 Response:
 
-- raw string email vua gui, vi du: `user@example.com`
+```json
+{
+  "data": {
+    "email": "user@example.com",
+    "purpose": "FORGOT_PASSWORD",
+    "ttlSeconds": 300,
+    "resendAfterSeconds": 60,
+    "maskedDestination": "u***@example.com"
+  }
+}
+```
 
 ### 6.1.5 Gui OTP dang ky
 
@@ -351,7 +367,17 @@ Request body:
 
 Response:
 
-- raw string email vua gui
+```json
+{
+  "data": {
+    "email": "user@example.com",
+    "purpose": "REGISTER",
+    "ttlSeconds": 300,
+    "resendAfterSeconds": 60,
+    "maskedDestination": "u***@example.com"
+  }
+}
+```
 
 Luu y:
 
@@ -363,25 +389,52 @@ Luu y:
 - Method: `POST`
 - URL: `/auth/verifyotp`
 - Auth: public
-- Params query:
-  - `pOtpType`
-  - `pEmail`
-  - `pOtp`
+
+Request body:
+
+```json
+{
+  "purpose": "REGISTER",
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
 
 Vi du:
 
-`POST /auth/verifyotp?pOtpType=OTP_REGISTER&pEmail=user@example.com&pOtp=123456`
+`POST /auth/verifyotp`
 
 Response thanh cong:
 
-- raw string OTP
+```json
+{
+  "data": {
+    "verified": true,
+    "purpose": "REGISTER",
+    "nextAction": "LOGIN_ALLOWED"
+  }
+}
+```
 
 Response that bai:
 
 ```json
 {
-  "error": "Invalid or expired OTP",
-  "status": "OTP_INVALID"
+  "error": "Invalid OTP.",
+  "status": "401 UNAUTHORIZED",
+  "code": "OTP_INVALID",
+  "remainingAttempts": 2
+}
+```
+
+Response block tam thoi:
+
+```json
+{
+  "error": "Too many invalid OTP attempts. Please try again later.",
+  "status": "429 TOO_MANY_REQUESTS",
+  "code": "OTP_VERIFY_BLOCKED",
+  "retryAfterSeconds": 900
 }
 ```
 
@@ -1289,12 +1342,12 @@ Frontend khong duoc gia dinh response nao cung co `data`.
 Raw string xuat hien o:
 
 - `/auth/logout`
-- `/auth/sendotp`
-- `/auth/sendotpregister`
-- `/auth/verifyotp` thanh cong
+- `/auth/forgot-password/confirm`
 - `/role/{id}` DELETE
 - nhom `/import/*`
 - nhom `/export/*`
+
+Auth OTP endpoints `/auth/sendotp`, `/auth/sendotpregister`, `/auth/verifyotp`, va `/auth/forgot-password/request` hien tra object JSON va runtime thuong di qua response envelope `{ data }`.
 
 ### 9.2 Search API tra ve `String`
 

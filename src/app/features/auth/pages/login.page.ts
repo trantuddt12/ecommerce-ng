@@ -60,6 +60,7 @@ declare global {
           <div class="auth-links">
             <a mat-button routerLink="/auth/register">Dang ky</a>
             <a mat-button routerLink="/auth/verify-otp">Xac thuc OTP</a>
+            <a mat-button routerLink="/auth/forgot-password">Quen mat khau</a>
           </div>
         </form>
       </mat-card-content>

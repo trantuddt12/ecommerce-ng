@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
     sendOtp: '/auth/sendotp',
     sendOtpRegister: '/auth/sendotpregister',
     verifyOtp: '/auth/verifyotp',
+    forgotPasswordRequest: '/auth/forgot-password/request',
+    forgotPasswordConfirm: '/auth/forgot-password/confirm',
   },
   health: {
     check: '/health-check',

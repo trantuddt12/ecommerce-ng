@@ -6,6 +6,9 @@ interface BackendErrorPayload {
   error?: string;
   message?: string;
   errorCode?: string;
+  code?: string;
+  retryAfterSeconds?: number;
+  remainingAttempts?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -16,6 +19,9 @@ export class ErrorMapperService {
         type: 'unknown',
         statusCode: 0,
         message: 'Da xay ra loi khong xac dinh.',
+        code: undefined,
+        retryAfterSeconds: undefined,
+        remainingAttempts: undefined,
         originalError: error,
       };
     }
@@ -25,6 +31,9 @@ export class ErrorMapperService {
         type: 'network',
         statusCode: 0,
         message: 'Khong the ket noi toi may chu.',
+        code: undefined,
+        retryAfterSeconds: undefined,
+        remainingAttempts: undefined,
         originalError: error,
       };
     }
@@ -38,6 +47,9 @@ export class ErrorMapperService {
       type: this.resolveType(error.status),
       statusCode: error.status,
       message,
+      code: typeof payload === 'string' ? undefined : payload?.code ?? payload?.errorCode,
+      retryAfterSeconds: typeof payload === 'string' ? undefined : payload?.retryAfterSeconds,
+      remainingAttempts: typeof payload === 'string' ? undefined : payload?.remainingAttempts,
       originalError: error,
     };
   }

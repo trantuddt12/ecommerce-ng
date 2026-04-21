@@ -3,7 +3,18 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
-import { ApiEnvelope, LoginRequest, LoginResponse, OtpRequest, RegisterRequest, UserResponse, VerifyOtpRequest } from '../models/auth.models';
+import {
+  ApiEnvelope,
+  ForgotPasswordConfirmRequest,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  SendOtpRequest,
+  SendOtpResponse,
+  UserResponse,
+  VerifyOtpRequest,
+  VerifyOtpResponse,
+} from '../models/auth.models';
 import { AuthStore } from '../state/auth.store';
 import { CurrentUserService } from './current-user.service';
 import { SessionService } from './session.service';
@@ -41,14 +52,7 @@ export class AuthService {
   }
 
   registerWithOtp(payload: RegisterRequest) {
-    return this.api.post<string>(API_ENDPOINTS.auth.sendOtpRegister, payload);
-  }
-
-  verifyOtpRegister(payload: VerifyOtpRequest) {
-    return this.verifyOtp({
-      ...payload,
-      otpType: 'otp:register:',
-    });
+    return this.api.post<ApiEnvelope<SendOtpResponse>>(API_ENDPOINTS.auth.sendOtpRegister, payload).pipe(map((response) => response.data));
   }
 
   loginWithGoogle(googleToken: string) {
@@ -100,22 +104,19 @@ export class AuthService {
     );
   }
 
-  sendOtp(payload: OtpRequest) {
-    return this.api.post<void>(API_ENDPOINTS.auth.sendOtp, {}, 'api', {
-      pOtpType: payload.username ?? '',
-      pToEmail: payload.email ?? '',
-    });
+  sendOtp(payload: SendOtpRequest) {
+    return this.api.post<ApiEnvelope<SendOtpResponse>>(API_ENDPOINTS.auth.sendOtp, payload).pipe(map((response) => response.data));
   }
 
-  sendOtpRegister(payload: RegisterRequest) {
-    return this.api.post<string>(API_ENDPOINTS.auth.sendOtpRegister, payload);
+  requestForgotPassword(email: string) {
+    return this.api.post<ApiEnvelope<SendOtpResponse>>(API_ENDPOINTS.auth.forgotPasswordRequest, { email }).pipe(map((response) => response.data));
   }
 
   verifyOtp(payload: VerifyOtpRequest) {
-    return this.api.post<string>(API_ENDPOINTS.auth.verifyOtp, {}, 'api', {
-      pOtpType: payload.otpType ?? '',
-      pEmail: payload.email ?? '',
-      pOtp: payload.otp,
-    });
+    return this.api.post<ApiEnvelope<VerifyOtpResponse>>(API_ENDPOINTS.auth.verifyOtp, payload).pipe(map((response) => response.data));
+  }
+
+  confirmForgotPassword(payload: ForgotPasswordConfirmRequest) {
+    return this.api.post<string>(API_ENDPOINTS.auth.forgotPasswordConfirm, payload);
   }
 }

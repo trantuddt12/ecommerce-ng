@@ -4,8 +4,10 @@ import { guestGuard } from './core/guards/guest.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { AuthLayoutComponent } from './core/layout/auth-layout.component';
 import { MainLayoutComponent } from './core/layout/main-layout.component';
+import { ForgotPasswordPage } from './features/auth/pages/forgot-password.page';
 import { LoginPage } from './features/auth/pages/login.page';
 import { RegisterPage } from './features/auth/pages/register.page';
+import { ResetPasswordPage } from './features/auth/pages/reset-password.page';
 import { VerifyOtpPage } from './features/auth/pages/verify-otp.page';
 import { AttributesPage } from './features/catalog/attributes/attributes.page';
 import { BrandsPage } from './features/catalog/brands/brands.page';
@@ -42,6 +44,8 @@ export const routes: Routes = [
       { path: 'login', component: LoginPage },
       { path: 'register', component: RegisterPage },
       { path: 'verify-otp', component: VerifyOtpPage },
+      { path: 'forgot-password', component: ForgotPasswordPage },
+      { path: 'reset-password', component: ResetPasswordPage },
       { path: '', pathMatch: 'full', redirectTo: 'login' },
     ],
   },

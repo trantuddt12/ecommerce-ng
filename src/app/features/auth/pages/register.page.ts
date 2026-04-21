@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AppConfig } from '../../../core/config/app-config.model';
-import { RegisterRequest } from '../../../core/models/auth.models';
+import { RegisterRequest, SendOtpResponse } from '../../../core/models/auth.models';
 import { APP_CONFIG } from '../../../core/tokens/app-config.token';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
@@ -143,17 +143,35 @@ export class RegisterPage implements AfterViewInit, OnDestroy {
     this.submitting.set(true);
     const payload: RegisterRequest = this.form.getRawValue();
     this.authService.registerWithOtp(payload).subscribe({
-      next: () => {
+      next: (response) => {
+        sessionStorage.setItem('auth.register-otp-draft', JSON.stringify(payload));
         this.notifications.success('Da gui OTP dang ky. Vui long kiem tra email.');
-        void this.router.navigate(['/auth/verify-otp'], {
-          queryParams: {
-            email: payload.email,
-            otpType: 'otp:register:',
-          },
-        });
+        this.navigateToVerifyOtp(response);
       },
-      error: (error) => this.notifications.error(this.errorMapper.map(error).message),
+      error: (error) => {
+        const mappedError = this.errorMapper.map(error);
+        if (mappedError.retryAfterSeconds) {
+          void this.router.navigate(['/auth/verify-otp'], {
+            queryParams: {
+              email: payload.email,
+              purpose: 'REGISTER',
+              resendAfterSeconds: mappedError.retryAfterSeconds,
+            },
+          });
+        }
+        this.notifications.error(mappedError.message);
+      },
       complete: () => this.submitting.set(false),
+    });
+  }
+
+  private navigateToVerifyOtp(response: SendOtpResponse): void {
+    void this.router.navigate(['/auth/verify-otp'], {
+      queryParams: {
+        email: response.email,
+        purpose: response.purpose,
+        resendAfterSeconds: response.resendAfterSeconds,
+      },
     });
   }
 

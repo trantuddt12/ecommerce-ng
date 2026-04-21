@@ -9,6 +9,8 @@ export interface LoginResponse {
   refreshToken?: string;
 }
 
+export type OtpPurpose = 'REGISTER' | 'FORGOT_PASSWORD' | 'EMAIL_VERIFY';
+
 export interface ApiEnvelope<T> {
   data: T;
   timestamp?: string | null;
@@ -28,16 +30,36 @@ export interface AuthSession {
   isAuthenticated: boolean;
 }
 
-export interface OtpRequest {
-  email?: string;
-  username?: string;
+export interface SendOtpRequest {
+  email: string;
+  purpose: OtpPurpose;
 }
 
 export interface VerifyOtpRequest {
-  otpType?: string;
-  email?: string;
-  username?: string;
+  purpose: OtpPurpose;
+  email: string;
   otp: string;
+}
+
+export interface SendOtpResponse {
+  email: string;
+  purpose: OtpPurpose;
+  ttlSeconds: number;
+  resendAfterSeconds: number;
+  maskedDestination?: string | null;
+}
+
+export interface VerifyOtpResponse {
+  verified: boolean;
+  purpose: OtpPurpose;
+  nextAction: 'LOGIN_ALLOWED' | 'RESET_PASSWORD';
+  resetGrantExpiresInSeconds?: number;
+}
+
+export interface ForgotPasswordConfirmRequest {
+  email: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface RegisterRequest {
