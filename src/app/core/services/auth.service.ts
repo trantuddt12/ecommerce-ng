@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
@@ -24,7 +25,13 @@ export class AuthService {
         const accessToken = response.data.accessToken;
         this.sessionService.setAccessToken(accessToken);
         this.currentUserService.setCurrentUserFromToken(accessToken);
-        return this.currentUserService.loadCurrentUser().pipe(map(() => response.data));
+        return this.currentUserService.loadCurrentUser().pipe(
+          map(() => response.data),
+          catchError((error) => {
+            this.sessionService.clearSession();
+            return throwError(() => error);
+          }),
+        );
       }),
     );
   }
@@ -57,6 +64,15 @@ export class AuthService {
           this.sessionService.setAccessToken(token);
           this.currentUserService.setCurrentUserFromToken(token);
         }),
+        switchMap((token) =>
+          this.currentUserService.loadCurrentUser().pipe(
+            map(() => token),
+            catchError((error) => {
+              this.sessionService.clearSession();
+              return throwError(() => error);
+            }),
+          ),
+        ),
         catchError((error) => {
           this.sessionService.clearSession();
           return throwError(() => error);
@@ -74,7 +90,12 @@ export class AuthService {
 
   logout() {
     return this.api.post<void>(API_ENDPOINTS.auth.logout, {}).pipe(
-      catchError(() => of(void 0)),
+      catchError((error) => {
+        if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+          return of(void 0);
+        }
+        return of(void 0);
+      }),
       tap(() => this.sessionService.clearSession()),
     );
   }

@@ -226,14 +226,38 @@ interface DuplicateSignatureInfo {
                   <ng-container matColumnDef="name">
                     <th mat-header-cell *matHeaderCellDef>Product</th>
                     <td mat-cell *matCellDef="let product">
-                      <div>
-                        <strong>{{ product.name }}</strong>
-                        <div class="catalog-inline-meta">
-                          <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
-                          <mat-chip class="catalog-chip-soft">{{ product.code }}</mat-chip>
-                          <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
+                      <div class="product-row-main">
+                        @if (product.images.length) {
+                          <div class="product-row-gallery" aria-hidden="true">
+                            @for (image of product.images.slice(0, 3); track image.id) {
+                              <div class="product-row-thumbnail" [class.product-row-thumbnail-featured]="image.thumbnail" [style.background-image]="'url(' + resolveProductImageUrl(image.url) + ')'">
+                              </div>
+                            }
+
+                            @if (product.images.length > 3) {
+                              <div class="product-row-thumbnail product-row-thumbnail-more">+{{ product.images.length - 3 }}</div>
+                            }
+                          </div>
+                        } @else if (resolveProductImageUrl(product.thumbnailUrl)) {
+                          <div class="product-row-gallery" aria-hidden="true">
+                            <div class="product-row-thumbnail product-row-thumbnail-featured" [style.background-image]="'url(' + resolveProductImageUrl(product.thumbnailUrl) + ')'">
+                            </div>
+                          </div>
+                        } @else {
+                          <div class="product-row-gallery" aria-hidden="true">
+                            <div class="product-row-thumbnail product-row-thumbnail-empty">No image</div>
+                          </div>
+                        }
+
+                        <div>
+                          <strong>{{ product.name }}</strong>
+                          <div class="catalog-inline-meta">
+                            <mat-chip class="catalog-chip-neutral">#{{ product.id }}</mat-chip>
+                            <mat-chip class="catalog-chip-soft">{{ product.code }}</mat-chip>
+                            <mat-chip class="catalog-chip-soft">{{ resolveBrandName(product.brandId) }}</mat-chip>
+                          </div>
+                          <div class="catalog-inline-meta">/{{ product.slug }}</div>
                         </div>
-                        <div class="catalog-inline-meta">/{{ product.slug }}</div>
                       </div>
                     </td>
                   </ng-container>
@@ -577,13 +601,13 @@ interface DuplicateSignatureInfo {
                 @if (!editingProductId()) {
                   <div class="product-upload-box">
                     <label for="product-images-input">Images</label>
-                    <input id="product-images-input" type="file" multiple (change)="onFilesSelected($event)" />
+                    <input id="product-images-input" type="file" multiple accept="image/*" (change)="onFilesSelected($event)" />
                     <p class="catalog-file-note">{{ selectedFilesCount() ? selectedFilesCount() + ' file da duoc chon.' : 'Chua co file nao duoc chon.' }}</p>
                   </div>
                 } @else {
                   <div class="product-upload-box">
                     <label for="product-images-update-input">Them images</label>
-                    <input id="product-images-update-input" type="file" multiple (change)="onImageUpdateFilesSelected($event)" />
+                    <input id="product-images-update-input" type="file" multiple accept="image/*" (change)="onImageUpdateFilesSelected($event)" />
                     <div class="catalog-actions catalog-actions-inline">
                       <button mat-flat-button color="primary" type="button" (click)="uploadEditorImages()" [disabled]="loading() || !pendingImageFilesCount()">
                         Upload {{ pendingImageFilesCount() ? '(' + pendingImageFilesCount() + ')' : '' }}
@@ -592,23 +616,40 @@ interface DuplicateSignatureInfo {
                   </div>
 
                   @if (editor().images.length) {
-                    <div class="product-image-grid">
-                      @for (image of editor().images; track image.id) {
-                        <mat-card class="product-image-card">
-                          <mat-card-content>
-                            <div class="product-image-preview" [style.background-image]="'url(' + resolveProductImageUrl(image.url) + ')'">
-                              @if (image.thumbnail) {
-                                <mat-chip class="catalog-chip-soft product-image-chip">thumbnail</mat-chip>
-                              }
+                    <div class="product-media-gallery-shell">
+                      @if (selectedEditorImage(); as activeImage) {
+                        <div class="product-media-stage">
+                          <div class="product-media-stage-image" [style.background-image]="'url(' + resolveProductImageUrl(activeImage.url) + ')'">
+                            @if (activeImage.thumbnail) {
+                              <mat-chip class="catalog-chip-soft product-image-chip">thumbnail</mat-chip>
+                            }
+                          </div>
+
+                          <div class="product-media-stage-meta">
+                            <div class="product-media-stage-text">
+                              <strong>Product gallery</strong>
+                              <span>{{ editor().images.length }} image{{ editor().images.length > 1 ? 's' : '' }}</span>
                             </div>
 
                             <div class="catalog-actions catalog-actions-inline">
-                              <button mat-stroked-button type="button" (click)="setEditorThumbnail(image.id)" [disabled]="loading() || image.thumbnail">Set thumbnail</button>
-                              <button mat-stroked-button color="warn" type="button" (click)="deleteEditorImage(image.id)" [disabled]="loading()">Xoa</button>
+                              <button mat-stroked-button type="button" (click)="setEditorThumbnail(activeImage.id)" [disabled]="loading() || activeImage.thumbnail">Set thumbnail</button>
+                              <button mat-stroked-button color="warn" type="button" (click)="deleteEditorImage(activeImage.id)" [disabled]="loading()">Xoa</button>
                             </div>
-                          </mat-card-content>
-                        </mat-card>
+                          </div>
+                        </div>
                       }
+
+                      <div class="product-media-thumbnail-strip">
+                        @for (image of editor().images; track image.id) {
+                          <button class="product-media-thumb" type="button" [class.product-media-thumb-active]="selectedEditorImageId() === image.id" (click)="selectEditorImage(image.id)">
+                            <div class="product-media-thumb-image" [style.background-image]="'url(' + resolveProductImageUrl(image.url) + ')'">
+                              @if (image.thumbnail) {
+                                <span class="product-media-thumb-badge">Thumbnail</span>
+                              }
+                            </div>
+                          </button>
+                        }
+                      </div>
                     </div>
                   } @else {
                     <div class="catalog-empty">Product nay chua co gallery image nao.</div>
@@ -655,6 +696,54 @@ interface DuplicateSignatureInfo {
       .product-editor-shell {
         display: grid;
         gap: 1.25rem;
+      }
+
+      .product-row-main {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 0.85rem;
+        align-items: center;
+      }
+
+      .product-row-gallery {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        max-width: 10rem;
+      }
+
+      .product-row-thumbnail {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 0.9rem;
+        background-size: cover;
+        background-position: center;
+        background-color: rgba(226, 232, 240, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.24);
+      }
+
+      .product-row-thumbnail-featured {
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+      }
+
+      .product-row-thumbnail-empty {
+        display: grid;
+        place-items: center;
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .product-row-thumbnail-more {
+        display: grid;
+        place-items: center;
+        background: rgba(15, 23, 42, 0.82);
+        color: #f8fafc;
+        font-size: 0.85rem;
+        font-weight: 700;
       }
 
       .product-list-panel,
@@ -785,8 +874,7 @@ interface DuplicateSignatureInfo {
         background: rgba(239, 246, 255, 0.65);
       }
 
-      .product-combination-grid,
-      .product-image-grid {
+      .product-combination-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.85rem;
@@ -815,14 +903,92 @@ interface DuplicateSignatureInfo {
         word-break: break-word;
       }
 
-      .product-image-preview {
+      .product-media-gallery-shell {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .product-media-stage {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .product-media-stage-image {
         position: relative;
-        min-height: 140px;
+        min-height: 24rem;
         border-radius: 1rem;
         background-size: cover;
         background-position: center;
         background-color: rgba(226, 232, 240, 0.8);
-        margin-bottom: 0.75rem;
+        overflow: hidden;
+      }
+
+      .product-media-stage-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .product-media-stage-text {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .product-media-stage-text strong {
+        color: #0f172a;
+      }
+
+      .product-media-stage-text span {
+        color: #64748b;
+        font-size: 0.92rem;
+      }
+
+      .product-media-thumbnail-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .product-media-thumb {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: #fff;
+        border-radius: 1rem;
+        padding: 0.45rem;
+        cursor: pointer;
+      }
+
+      .product-media-thumb:hover {
+        border-color: rgba(59, 130, 246, 0.35);
+      }
+
+      .product-media-thumb-active {
+        border-color: rgba(37, 99, 235, 0.48);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      }
+
+      .product-media-thumb-image {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 0.8rem;
+        background-size: cover;
+        background-position: center;
+        background-color: rgba(226, 232, 240, 0.8);
+        overflow: hidden;
+      }
+
+      .product-media-thumb-badge {
+        position: absolute;
+        left: 0.45rem;
+        bottom: 0.45rem;
+        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.78);
+        color: #f8fafc;
+        font-size: 0.65rem;
+        font-weight: 700;
       }
 
       .product-image-chip {
@@ -847,6 +1013,20 @@ interface DuplicateSignatureInfo {
       }
 
       @media (max-width: 720px) {
+        .product-media-stage-image {
+          min-height: 18rem;
+        }
+
+        .product-media-thumbnail-strip {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .product-row-main {
+          grid-template-columns: 1fr;
+        }
+
         .product-axis-row {
           grid-template-columns: 1fr;
         }
@@ -875,6 +1055,7 @@ export class ProductsPage {
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly editingProductId = signal<number | null>(null);
+  protected readonly selectedEditorImageId = signal<number | null>(null);
   protected readonly editor = signal<ProductEditorState>(createEmptyEditor());
   protected readonly displayedColumns = ['name', 'category', 'price', 'status', 'variants', 'actions'];
   protected readonly filters = {
@@ -1093,6 +1274,20 @@ export class ProductsPage {
     return this.pendingImageFiles.length;
   }
 
+  protected selectedEditorImage(): ProductImage | null {
+    const images = this.editor().images;
+    if (!images.length) {
+      return null;
+    }
+
+    const selectedId = this.selectedEditorImageId();
+    return images.find((image) => image.id === selectedId) ?? images.find((image) => image.thumbnail) ?? images[0] ?? null;
+  }
+
+  protected selectEditorImage(imageId: number): void {
+    this.selectedEditorImageId.set(imageId);
+  }
+
   protected onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.selectedFiles = Array.from(input.files ?? []);
@@ -1120,6 +1315,8 @@ export class ProductsPage {
         next: (product) => {
           this.pendingImageFiles = [];
           this.editor.set(remapEditorForSchema(mapProductDetailToEditor(product), this.availableVariantAttributes()));
+          this.syncSelectedEditorImage(product.images);
+          this.patchProductListItem(product);
           this.notifications.success('Upload product images thanh cong.');
         },
         error: (error) => this.handleError(error),
@@ -1138,6 +1335,8 @@ export class ProductsPage {
       .subscribe({
         next: (product) => {
           this.editor.set(remapEditorForSchema(mapProductDetailToEditor(product), this.availableVariantAttributes()));
+          this.syncSelectedEditorImage(product.images);
+          this.patchProductListItem(product);
           this.notifications.success('Cap nhat thumbnail thanh cong.');
         },
         error: (error) => this.handleError(error),
@@ -1156,6 +1355,8 @@ export class ProductsPage {
       .subscribe({
         next: (product) => {
           this.editor.set(remapEditorForSchema(mapProductDetailToEditor(product), this.availableVariantAttributes()));
+          this.syncSelectedEditorImage(product.images);
+          this.patchProductListItem(product);
           this.notifications.success('Xoa product image thanh cong.');
         },
         error: (error) => this.handleError(error),
@@ -1208,6 +1409,7 @@ export class ProductsPage {
         next: (product) => {
           this.editingProductId.set(product.id);
           this.editor.set(mapProductDetailToEditor(product));
+          this.syncSelectedEditorImage(product.images);
           this.selectedFiles = [];
           this.pendingImageFiles = [];
           this.loadCategoryVariantSchema(product.categoryId, product);
@@ -1362,6 +1564,38 @@ export class ProductsPage {
       this.productEditorPanel?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       this.productNameInput?.nativeElement.focus();
     }, 0);
+  }
+
+  private syncSelectedEditorImage(images: ProductImage[]): void {
+    if (!images.length) {
+      this.selectedEditorImageId.set(null);
+      return;
+    }
+
+    const currentId = this.selectedEditorImageId();
+    if (currentId != null && images.some((image) => image.id === currentId)) {
+      return;
+    }
+
+    this.selectedEditorImageId.set(images.find((image) => image.thumbnail)?.id ?? images[0]?.id ?? null);
+  }
+
+  private patchProductListItem(product: AdminProductDetail): void {
+    const thumbnailUrl = product.images.find((image) => image.thumbnail)?.url ?? product.images[0]?.url ?? null;
+
+    this.products.set(
+      this.products().map((item) => {
+        if (item.id !== product.id) {
+          return item;
+        }
+
+        return {
+          ...item,
+          images: product.images,
+          thumbnailUrl,
+        };
+      }),
+    );
   }
 }
 

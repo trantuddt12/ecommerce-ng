@@ -238,6 +238,7 @@ export interface AdminProductListItem {
   variantCount: number;
   price: number | null;
   thumbnailUrl: string | null;
+  images: ProductImage[];
 }
 
 export interface AdminProductDetail {

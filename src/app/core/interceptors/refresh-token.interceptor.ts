@@ -13,7 +13,14 @@ export const refreshTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
 
-  if (request.url.includes(API_ENDPOINTS.auth.refresh)) {
+  const isAuthRefreshRequest = request.url.includes(API_ENDPOINTS.auth.refresh);
+  const isPublicAuthRequest = request.url.includes(API_ENDPOINTS.auth.login)
+    || request.url.includes(API_ENDPOINTS.auth.sendOtp)
+    || request.url.includes(API_ENDPOINTS.auth.sendOtpRegister)
+    || request.url.includes(API_ENDPOINTS.auth.verifyOtp)
+    || request.url.includes(API_ENDPOINTS.auth.logout);
+
+  if (isAuthRefreshRequest || isPublicAuthRequest) {
     return next(request);
   }
 
@@ -24,7 +31,6 @@ export const refreshTokenInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       return authService.refresh().pipe(
-        switchMap(() => currentUserService.loadCurrentUser()),
         switchMap(() =>
           next(
             request.clone({

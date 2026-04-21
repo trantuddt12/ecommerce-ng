@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
-import { catchError, map, of, tap } from 'rxjs';
+import { catchError, map, of, tap, throwError } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
 import { BackendPermission, BackendUser, CurrentUser } from '../models/user.models';
 import { AuthStore } from '../state/auth.store';
 import { SessionService } from './session.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface JwtPayload {
   sub?: string;
@@ -31,7 +32,14 @@ export class CurrentUserService {
     return this.api.get<BackendUser | ApiEnvelope<BackendUser>>(API_ENDPOINTS.auth.me).pipe(
       map((response) => unwrapApiEnvelope(response)),
       map((response) => this.mapCurrentUser(response)),
-      catchError(() => of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()))),
+      catchError((error) => {
+        if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+          this.sessionService.clearSession();
+          return throwError(() => error);
+        }
+
+        return of(this.mapCurrentUserFromToken(this.sessionService.getAccessToken()));
+      }),
       tap((user) => {
         this.authStore.setCurrentUser(user);
       }),

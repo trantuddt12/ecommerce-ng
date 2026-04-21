@@ -2,6 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AppError } from '../models/app-error.model';
 
+interface BackendErrorPayload {
+  error?: string;
+  message?: string;
+  errorCode?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ErrorMapperService {
   map(error: unknown): AppError {
@@ -23,10 +29,10 @@ export class ErrorMapperService {
       };
     }
 
-    const payload = error.error as { error?: string; message?: string } | string | null;
+    const payload = error.error as BackendErrorPayload | string | null;
     const message = typeof payload === 'string'
       ? payload
-      : payload?.error ?? payload?.message ?? error.message ?? 'Da xay ra loi tu may chu.';
+      : this.resolveMessage(error.status, payload) ?? payload?.error ?? payload?.message ?? error.message ?? 'Da xay ra loi tu may chu.';
 
     return {
       type: this.resolveType(error.status),
@@ -43,5 +49,27 @@ export class ErrorMapperService {
     if (status === 404) return 'not-found';
     if (status >= 500) return 'server';
     return 'unknown';
+  }
+
+  private resolveMessage(status: number, payload: BackendErrorPayload | null): string | null {
+    const errorCode = payload?.errorCode;
+
+    if (status !== 401 || !errorCode) {
+      return null;
+    }
+
+    if (errorCode === 'E103') {
+      return payload?.error ?? 'Tai khoan da bi khoa.';
+    }
+
+    if (errorCode === 'E104') {
+      return payload?.error ?? 'Tai khoan khong con hoat dong.';
+    }
+
+    if (errorCode === 'E106') {
+      return 'Phien dang nhap da het hieu luc. Vui long dang nhap lai.';
+    }
+
+    return null;
   }
 }
