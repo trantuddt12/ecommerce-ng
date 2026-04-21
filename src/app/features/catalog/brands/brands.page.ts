@@ -164,8 +164,8 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
                 <ng-container matColumnDef="image">
                   <th mat-header-cell *matHeaderCellDef>Image</th>
                   <td mat-cell *matCellDef="let brand">
-                    @if (brand.imageUrl) {
-                      <img class="brand-table-image" [src]="toMediaUrl(brand.imageUrl)!" [alt]="brand.name" />
+                    @if (brandThumbnailUrl(brand)) {
+                      <img class="brand-table-image" [src]="brandThumbnailUrl(brand)!" [alt]="brand.name" />
                     } @else {
                       <span class="catalog-muted">-</span>
                     }
@@ -259,6 +259,43 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
 
     .brand-search-grid {
       margin-bottom: 0.35rem;
+    }
+
+    .brand-image-preview {
+      display: grid;
+      place-items: center;
+      min-height: 13rem;
+      max-height: 18rem;
+      padding: 0.85rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 1rem;
+      background: rgba(248, 250, 252, 0.96);
+    }
+
+    .brand-image-preview img {
+      width: 100%;
+      max-width: 100%;
+      max-height: 16rem;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+    }
+
+    .brand-table-image {
+      width: 4rem;
+      height: 4rem;
+      max-width: 4rem;
+      max-height: 4rem;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      overflow: hidden;
+      border-radius: 0.85rem;
+      padding: 0.35rem;
+      background: rgba(248, 250, 252, 0.96);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-sizing: border-box;
     }
 
     .brand-stat-card:hover,
@@ -386,7 +423,9 @@ export class BrandsPage {
     this.brandApi.list()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (brands) => this.brands.set(brands),
+        next: (brands) => {
+          this.brands.set(brands);
+        },
         error: (error) => {
           const mappedError = this.errorMapper.map(error);
           this.errorMessage.set(mappedError.message);
@@ -552,7 +591,17 @@ export class BrandsPage {
       return null;
     }
 
-    return this.toMediaUrl(this.brands().find((brand) => brand.id === editingId)?.imageUrl ?? null);
+    const brand = this.brands().find((currentBrand) => currentBrand.id === editingId);
+    return brand ? this.brandThumbnailUrl(brand) : null;
+  }
+
+  protected brandThumbnailUrl(brand: Brand): string | null {
+    const thumbnail = brand.galleryImages?.find((image) => image.thumbnail) ?? brand.galleryImages?.[0];
+    if (thumbnail) {
+      return this.toMediaUrl(thumbnail.url);
+    }
+
+    return this.toMediaUrl(brand.imageUrl ?? null);
   }
 
   protected selectedBrandImages(): NonNullable<Brand['galleryImages']> {
