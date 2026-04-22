@@ -50,6 +50,18 @@ export class CategoryApiService {
     );
   }
 
+  getById(id: number): Observable<Category> {
+    return this.baseApi.get<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.byId(id)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  getBySlug(slug: string): Observable<Category> {
+    return this.baseApi.get<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.bySlug(slug)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
   create(request: CategoryMutationRequest): Observable<Category> {
     return this.baseApi.post<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.create, request).pipe(
       map((response) => unwrapApiEnvelope(response)),

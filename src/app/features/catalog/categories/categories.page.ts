@@ -936,21 +936,7 @@ export class CategoriesPage {
   }
 
   protected startEdit(category: Category): void {
-    this.editingId.set(category.id);
-    this.form.code = category.code;
-    this.form.name = category.name;
-    this.form.slug = category.slug;
-    this.form.description = category.description ?? '';
-    this.form.parentId = category.parentId;
-    this.form.sortOrder = category.sortOrder ?? 0;
-    this.form.status = category.status;
-    this.form.visible = category.visible;
-    this.form.assignable = category.assignable;
-    this.form.iconUrl = category.iconUrl ?? '';
-    this.form.seoTitle = category.seoTitle ?? '';
-    this.form.seoDescription = category.seoDescription ?? '';
-    this.form.seoKeywords = category.seoKeywords ?? '';
-    this.scrollToEditor();
+    this.hydrateCategoryEditor(category.id, category);
   }
 
   protected availableParents(): Category[] {
@@ -1262,7 +1248,7 @@ export class CategoriesPage {
       }))
       .subscribe({
         next: (category) => {
-          this.replaceCategory(category);
+          this.syncUpdatedCategory(category);
           this.notifications.success('Upload category images thanh cong.');
         },
         error: (error) => {
@@ -1285,7 +1271,7 @@ export class CategoriesPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (category) => {
-          this.replaceCategory(category);
+          this.syncUpdatedCategory(category);
           this.notifications.success('Cap nhat category thumbnail thanh cong.');
         },
         error: (error) => {
@@ -1308,7 +1294,7 @@ export class CategoriesPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (category) => {
-          this.replaceCategory(category);
+          this.syncUpdatedCategory(category);
           this.notifications.success('Xoa category image thanh cong.');
         },
         error: (error) => {
@@ -1321,6 +1307,61 @@ export class CategoriesPage {
 
   private replaceCategory(updatedCategory: Category): void {
     this.categories.update((categories) => categories.map((category) => category.id === updatedCategory.id ? updatedCategory : category));
+  }
+
+  private syncUpdatedCategory(updatedCategory: Category): void {
+    this.replaceCategory(updatedCategory);
+    if (this.editingId() === updatedCategory.id) {
+      this.hydrateCategoryEditor(updatedCategory.id, updatedCategory, false);
+    }
+    this.loadTree();
+    this.loadDeletedCategories();
+  }
+
+  private hydrateCategoryEditor(categoryId: number, fallbackCategory?: Category, scroll = true): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.categoryApi.getById(categoryId)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (category) => {
+          this.editingId.set(category.id);
+          this.replaceCategory(category);
+          this.patchFormFromCategory(category);
+          if (scroll) {
+            this.scrollToEditor();
+          }
+        },
+        error: (error) => {
+          if (fallbackCategory) {
+            this.editingId.set(fallbackCategory.id);
+            this.patchFormFromCategory(fallbackCategory);
+            if (scroll) {
+              this.scrollToEditor();
+            }
+          }
+
+          const mappedError = this.errorMapper.map(error);
+          this.errorMessage.set(mappedError.message);
+          this.notifications.error(mappedError.message);
+        },
+      });
+  }
+
+  private patchFormFromCategory(category: Category): void {
+    this.form.code = category.code;
+    this.form.name = category.name;
+    this.form.slug = category.slug;
+    this.form.description = category.description ?? '';
+    this.form.parentId = category.parentId;
+    this.form.sortOrder = category.sortOrder ?? 0;
+    this.form.status = category.status;
+    this.form.visible = category.visible;
+    this.form.assignable = category.assignable;
+    this.form.iconUrl = category.iconUrl ?? '';
+    this.form.seoTitle = category.seoTitle ?? '';
+    this.form.seoDescription = category.seoDescription ?? '';
+    this.form.seoKeywords = category.seoKeywords ?? '';
   }
 
   private applyCategoryPage(page: PagedResult<Category>): void {
