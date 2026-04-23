@@ -16,19 +16,36 @@ Dac diem:
 - Duoc bao boi `guestGuard`.
 - Muc dich la ngan nguoi da dang nhap quay lai man auth.
 
-### Nhom chinh sau dang nhap
+### Nhom admin
 
-- `/dashboard`
-- `/catalog/brands`
-- `/catalog/categories`
-- `/catalog/products`
-- `/catalog/search`
+- `/admin/dashboard`
+- `/admin/management/users`
+- `/admin/management/roles`
+- `/admin/catalog/brands`
+- `/admin/catalog/categories`
+- `/admin/catalog/products`
+- `/admin/catalog/attributes`
+- `/admin/catalog/operations`
+- `/admin/catalog/search`
+- `/admin/orders`
 
 Dac diem:
 
 - Su dung `MainLayoutComponent`.
 - Duoc bao boi `authGuard`.
-- Route `/catalog/brands` co them `permissionGuard` voi `PRODUCT_VIEW`.
+- Tung route dung `permissionGuard` voi `data.permissions` theo permission backend.
+
+### Nhom client
+
+- `/client/checkout`
+- `/client/orders/me`
+- `/client/orders/me/:id`
+
+Dac diem:
+
+- Su dung `ClientLayoutComponent`.
+- Duoc bao boi `authGuard` va `permissionGuard` o `canActivateChild`.
+- Route client hien duoc tach theo `data.roles = ['CUSTOMER']` de ngan user admin/staff di vao man client khi da dang nhap.
 
 ### Route he thong
 
@@ -48,10 +65,14 @@ Da khai bao:
 - `categories`
 - `products`
 - `attributes`
+- `operations`
 - `search`
+- `checkout`
+- `myOrders`
+- `adminOrders`
 
 ## Luu y
 
-- Co route constants cho `users`, `roles`, `attributes` nhung route tree hien tai chua khai bao day du trong `app.routes.ts`.
 - Khi them route moi, can kiem tra dong bo giua `APP_ROUTES`, sidebar/header navigation, va route config thuc te.
-- Neu route can permission, uu tien dung `data.permissions` ket hop `permissionGuard`.
+- Route admin uu tien dung `data.permissions` ket hop `permissionGuard`.
+- Route client co the dung `data.roles` neu can tach audience theo vai tro ma khong doi backend permission contract.

@@ -8,9 +8,9 @@ export const APP_ROUTES = {
   attributes: '/admin/catalog/attributes',
   operations: '/admin/catalog/operations',
   search: '/admin/catalog/search',
-  checkout: '/admin/checkout',
-  myOrders: '/admin/orders/me',
-  myOrderDetail: (id: string | number) => `/admin/orders/me/${id}`,
+  checkout: '/client/checkout',
+  myOrders: '/client/orders/me',
+  myOrderDetail: (id: string | number) => `/client/orders/me/${id}`,
   adminOrders: '/admin/orders',
   adminOrderDetail: (id: string | number) => `/admin/orders/${id}`,
 } as const;

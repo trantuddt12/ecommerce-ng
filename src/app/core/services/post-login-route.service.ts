@@ -9,6 +9,12 @@ export class PostLoginRouteService {
 
   getDefaultRoute(): string {
     const permissions = this.authStore.permissions();
+    const roles = new Set(this.authStore.roles());
+
+    if (roles.has('CUSTOMER')) {
+      return APP_ROUTES.myOrders;
+    }
+
     if (hasAnyPermission(permissions, ['USER_VIEW'])) {
       return APP_ROUTES.users;
     }
@@ -40,3 +46,4 @@ export class PostLoginRouteService {
     return APP_ROUTES.dashboard;
   }
 }
+

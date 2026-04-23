@@ -116,6 +116,23 @@ export class AuthService {
     return this.api.post<ApiEnvelope<VerifyOtpResponse>>(API_ENDPOINTS.auth.verifyOtp, payload).pipe(map((response) => response.data));
   }
 
+  completeOtpLogin(response: VerifyOtpResponse) {
+    const accessToken = response.accessToken;
+    if (!accessToken) {
+      return throwError(() => new Error('OTP login response is missing access token.'));
+    }
+
+    this.sessionService.setAccessToken(accessToken);
+    this.currentUserService.setCurrentUserFromToken(accessToken);
+    return this.currentUserService.loadCurrentUser().pipe(
+      map(() => accessToken),
+      catchError((error) => {
+        this.sessionService.clearSession();
+        return throwError(() => error);
+      }),
+    );
+  }
+
   confirmForgotPassword(payload: ForgotPasswordConfirmRequest) {
     return this.api.post<string>(API_ENDPOINTS.auth.forgotPasswordConfirm, payload);
   }

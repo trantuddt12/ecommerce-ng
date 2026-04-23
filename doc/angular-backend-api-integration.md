@@ -324,7 +324,7 @@ Request body:
 
 ```json
 {
-  "purpose": "FORGOT_PASSWORD",
+  "purpose": "LOGIN",
   "email": "user@example.com"
 }
 ```
@@ -339,13 +339,18 @@ Response:
 {
   "data": {
     "email": "user@example.com",
-    "purpose": "FORGOT_PASSWORD",
+    "purpose": "LOGIN",
     "ttlSeconds": 300,
     "resendAfterSeconds": 60,
     "maskedDestination": "u***@example.com"
   }
 }
 ```
+
+Luu y:
+
+- `purpose=LOGIN` gui OTP dang nhap theo email
+- `purpose=FORGOT_PASSWORD` giu nguyen flow quen mat khau
 
 ### 6.1.5 Gui OTP dang ky
 
@@ -410,11 +415,18 @@ Response thanh cong:
 {
   "data": {
     "verified": true,
-    "purpose": "REGISTER",
-    "nextAction": "LOGIN_ALLOWED"
+    "purpose": "LOGIN",
+    "nextAction": "LOGIN_SUCCESS",
+    "accessToken": "<jwt-access-token>",
+    "refreshToken": "<opaque-or-jwt-refresh-token>"
   }
 }
 ```
+
+Luu y:
+
+- voi `purpose=LOGIN`, backend dong thoi set refresh-token cookie nhu login thuong
+- frontend phai luu `accessToken`, goi `/auth/me`, roi moi dieu huong vao app
 
 Response that bai:
 

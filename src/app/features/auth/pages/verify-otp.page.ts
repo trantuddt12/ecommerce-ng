@@ -3,6 +3,7 @@ import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,48 +11,70 @@ import { OtpPurpose, RegisterRequest } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { PostLoginRouteService } from '../../../core/services/post-login-route.service';
 
 @Component({
   selector: 'app-verify-otp-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatInputModule],
   template: `
     <mat-card class="auth-page auth-card">
       <mat-card-content>
         <form [formGroup]="form" (ngSubmit)="submit()">
-          <p class="auth-eyebrow">OTP Verify</p>
-          <h2 class="auth-title">Xac thuc OTP cho register hoac auth flow.</h2>
+          <p class="auth-eyebrow">Xac thuc OTP</p>
+          <h2 class="auth-title">Nhap ma OTP da duoc gui toi email cua ban.</h2>
+
+          <mat-chip-set aria-label="otp flow">
+            <mat-chip>{{ purposeLabel() }}</mat-chip>
+          </mat-chip-set>
+
+          @if (hasFlowContext()) {
+            <p class="auth-helper">
+              {{ helperText() }}
+            </p>
+          } @else {
+            <div class="auth-inline-note auth-inline-note--warning">
+              <p>Trang nay chi dung de nhap ma OTP sau khi ban da gui yeu cau.</p>
+              <p>Hay quay lai buoc truoc de gui ma, roi frontend se dua ban tro lai day voi dung email va loai OTP.</p>
+            </div>
+
+            <div class="auth-actions auth-actions--stacked">
+              <a mat-flat-button color="primary" routerLink="/auth/register">Gui OTP dang ky</a>
+              <a mat-stroked-button routerLink="/auth/login">Gui OTP dang nhap</a>
+              <a mat-stroked-button routerLink="/auth/forgot-password">Gui OTP quen mat khau</a>
+            </div>
+          }
 
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" />
+            <input matInput type="email" formControlName="email" [readonly]="hasFlowContext()" />
           </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Loai OTP</mat-label>
-              <input matInput type="text" formControlName="purpose" readonly />
-            </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Loai OTP</mat-label>
+            <input matInput type="text" [value]="purposeLabel()" readonly />
+          </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>OTP</mat-label>
-            <input matInput type="text" formControlName="otp" />
+            <input matInput type="text" formControlName="otp" placeholder="Nhap ma gom 6 chu so" />
           </mat-form-field>
 
           <div class="auth-actions">
-            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting() || blocked()">Xac thuc</button>
-            <button mat-stroked-button type="button" [disabled]="!canResend() || submitting() || blocked()" (click)="resendOtp()">Gui lai OTP</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting() || blocked() || !hasFlowContext()">Xac thuc OTP</button>
+            <button mat-stroked-button type="button" [disabled]="!canResend() || submitting() || blocked() || !hasFlowContext()" (click)="resendOtp()">Gui lai OTP</button>
           </div>
 
           @if (countdown() > 0) {
-            <p>Con gui lai sau {{ countdown() }}s.</p>
+            <p class="auth-helper">Ban co the gui lai ma sau {{ countdown() }} giay.</p>
           }
 
           @if (remainingAttempts() !== null) {
-            <p>So lan thu con lai: {{ remainingAttempts() }}</p>
+            <p class="auth-helper auth-helper--warning">So lan thu con lai: {{ remainingAttempts() }}</p>
           }
 
           @if (blocked()) {
-            <p>OTP tam thoi bi khoa. Vui long thu lai sau {{ countdown() }}s.</p>
+            <p class="auth-helper auth-helper--warning">OTP tam thoi bi khoa. Vui long thu lai sau {{ countdown() }} giay.</p>
           }
 
           <div class="auth-links">
@@ -62,7 +85,29 @@ import { NotificationService } from '../../../core/services/notification.service
       </mat-card-content>
     </mat-card>
   `,
-  styles: [`form { display: grid; gap: 1rem; }`],
+  styles: [`
+    form { display: grid; gap: 1rem; }
+    .auth-helper { margin: 0; color: rgba(15, 23, 42, 0.78); }
+    .auth-helper--warning { color: #b45309; font-weight: 500; }
+    .auth-inline-note {
+      padding: 0.875rem 1rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(248, 250, 252, 0.92);
+      display: grid;
+      gap: 0.35rem;
+    }
+    .auth-inline-note p { margin: 0; }
+    .auth-inline-note--warning {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(255, 251, 235, 0.96);
+      color: #92400e;
+    }
+    .auth-actions--stacked {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+  `],
 })
 export class VerifyOtpPage implements OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
@@ -71,12 +116,15 @@ export class VerifyOtpPage implements OnDestroy {
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly postLoginRouteService = inject(PostLoginRouteService);
   private countdownTimer?: ReturnType<typeof setInterval>;
+  private readonly initialPurpose: OtpPurpose;
 
   protected readonly submitting = signal(false);
   protected readonly countdown = signal(0);
   protected readonly remainingAttempts = signal<number | null>(null);
   protected readonly blocked = signal(false);
+  protected readonly hasFlowContext = signal(false);
 
   protected readonly form = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -88,12 +136,14 @@ export class VerifyOtpPage implements OnDestroy {
     const email = this.route.snapshot.queryParamMap.get('email');
     const purpose = this.route.snapshot.queryParamMap.get('purpose') as OtpPurpose | null;
     const resendAfterSeconds = Number(this.route.snapshot.queryParamMap.get('resendAfterSeconds') ?? '0');
+    this.initialPurpose = purpose ?? 'REGISTER';
     if (email) {
       this.form.patchValue({ email });
     }
     if (purpose) {
       this.form.patchValue({ purpose });
     }
+    this.hasFlowContext.set(Boolean(email && purpose));
     this.startCountdown(Number.isFinite(resendAfterSeconds) ? resendAfterSeconds : 0);
   }
 
@@ -102,6 +152,11 @@ export class VerifyOtpPage implements OnDestroy {
   }
 
   submit(): void {
+    if (!this.hasFlowContext()) {
+      this.notifications.error('Hay gui OTP tu trang dang ky hoac quen mat khau truoc khi xac thuc.');
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -112,6 +167,19 @@ export class VerifyOtpPage implements OnDestroy {
       next: (response) => {
         this.remainingAttempts.set(null);
         this.blocked.set(false);
+        if (response.nextAction === 'LOGIN_SUCCESS') {
+          this.authService.completeOtpLogin(response).subscribe({
+            next: () => {
+              this.notifications.success('Dang nhap bang OTP thanh cong.');
+              void this.router.navigateByUrl(this.postLoginRouteService.getDefaultRoute());
+            },
+            error: (error) => {
+              this.notifications.error(this.errorMapper.map(error).message);
+            },
+          });
+          return;
+        }
+
         if (response.nextAction === 'RESET_PASSWORD') {
           this.notifications.success('OTP hop le. Vui long dat lai mat khau.');
           void this.router.navigate(['/auth/reset-password'], {
@@ -145,6 +213,11 @@ export class VerifyOtpPage implements OnDestroy {
   }
 
   protected resendOtp(): void {
+    if (!this.hasFlowContext()) {
+      this.notifications.error('Hay bat dau tu buoc gui OTP truoc khi dung chuc nang gui lai ma.');
+      return;
+    }
+
     const email = this.form.controls.email.getRawValue();
     const purpose = this.form.controls.purpose.getRawValue();
 
@@ -197,6 +270,26 @@ export class VerifyOtpPage implements OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  protected purposeLabel(): string {
+    if (this.initialPurpose === 'FORGOT_PASSWORD') {
+      return 'Quen mat khau';
+    }
+    if (this.initialPurpose === 'LOGIN') {
+      return 'Dang nhap bang OTP';
+    }
+    return 'Dang ky tai khoan';
+  }
+
+  protected helperText(): string {
+    if (this.initialPurpose === 'LOGIN') {
+      return 'Nhap ma OTP vua duoc gui toi email de dang nhap vao he thong.';
+    }
+
+    return this.initialPurpose === 'FORGOT_PASSWORD'
+      ? 'Nhap ma OTP vua duoc gui toi email de tiep tuc dat lai mat khau.'
+      : 'Nhap ma OTP vua duoc gui toi email de hoan tat dang ky tai khoan.';
   }
 
   private startCountdown(seconds: number): void {

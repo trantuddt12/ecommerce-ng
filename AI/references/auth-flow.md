@@ -18,11 +18,15 @@ Nguon: `src/app/core/services/auth.service.ts`, `src/app/features/auth/pages/log
 1. User submit form o `LoginPage`.
 2. `AuthService.login()` goi `POST /auth/login`.
 3. Neu user dang nhap Google, frontend van goi cung endpoint `POST /auth/login` nhung gui `googleToken` thay cho username/password.
-4. Response tra ve `accessToken`.
-5. `SessionService` luu token.
-6. `CurrentUserService.setCurrentUserFromToken()` dong bo thong tin user tu token.
-7. `CurrentUserService.loadCurrentUser()` nap user detail tu backend.
-8. Component navigate sang `/dashboard` khi thanh cong.
+4. Neu user chon dang nhap bang OTP, `LoginPage` goi `POST /auth/sendotp` voi body `{ purpose: 'LOGIN', email }`.
+5. Frontend chuyen sang `/auth/verify-otp` kem `email`, `purpose=LOGIN`, va `resendAfterSeconds`.
+6. `VerifyOtpPage` goi `POST /auth/verifyotp` voi body `{ purpose: 'LOGIN', email, otp }`.
+7. Neu backend tra `nextAction='LOGIN_SUCCESS'`, frontend luu `accessToken`, tai `/auth/me`, va dieu huong nhu login thuong.
+8. Response tra ve `accessToken`.
+9. `SessionService` luu token.
+10. `CurrentUserService.setCurrentUserFromToken()` dong bo thong tin user tu token.
+11. `CurrentUserService.loadCurrentUser()` nap user detail tu backend.
+12. Component navigate sang `/dashboard` khi thanh cong.
 
 ## Luong dang ky
 
