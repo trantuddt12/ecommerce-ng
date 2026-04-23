@@ -23,7 +23,14 @@ import { SidebarComponent } from './sidebar.component';
         <app-sidebar [isOpen]="isSidebarOpen()" (navigate)="closeSidebar()"></app-sidebar>
 
         <main class="shell-content" (click)="closeSidebar()">
-          <router-outlet></router-outlet>
+          <div class="shell-content-inner">
+            <router-outlet></router-outlet>
+          </div>
+
+          <footer class="shell-footer">
+            <span>TTL Ecommerce Admin</span>
+            <span>Van hanh gon gang va tap trung vao noi dung chinh</span>
+          </footer>
         </main>
       </div>
     </section>
@@ -31,23 +38,43 @@ import { SidebarComponent } from './sidebar.component';
   styles: [`
     .shell {
       min-height: 100vh;
-      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+      background: #f8fafc;
     }
 
     .shell-body {
       display: grid;
-      grid-template-columns: 18rem 1fr;
-      gap: 1.25rem;
-      padding: 1.25rem;
+      grid-template-columns: 17rem minmax(0, 1fr);
+      gap: 1rem;
+      padding: 1rem;
       position: relative;
+      align-items: start;
     }
 
     .shell-content {
-      background: rgba(255, 255, 255, 0.85);
-      border-radius: 1.5rem;
-      padding: 1.5rem;
-      min-height: calc(100vh - 7rem);
-      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+      min-height: calc(100vh - 5.5rem);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .shell-content-inner {
+      flex: 1;
+      min-width: 0;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .shell-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 0.25rem 0.25rem;
+      color: #64748b;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
     }
 
     .sidebar-backdrop {
@@ -57,12 +84,15 @@ import { SidebarComponent } from './sidebar.component';
     @media (max-width: 960px) {
       .shell-body {
         grid-template-columns: 1fr;
-        padding: 1rem;
+        padding: 0.75rem;
       }
 
       .shell-content {
-        padding: 1.25rem;
-        min-height: calc(100vh - 8rem);
+        min-height: calc(100vh - 6rem);
+      }
+
+      .shell-content-inner {
+        padding: 1rem;
       }
 
       .sidebar-backdrop.visible {
@@ -77,12 +107,16 @@ import { SidebarComponent } from './sidebar.component';
 
     @media (max-width: 720px) {
       .shell-body {
-        padding: 0.75rem;
+        padding: 0.5rem;
       }
 
-      .shell-content {
-        border-radius: 1.25rem;
-        padding: 1rem;
+      .shell-content-inner {
+        border-radius: 0.875rem;
+        padding: 0.875rem;
+      }
+
+      .shell-footer {
+        font-size: 0.8125rem;
       }
     }
   `],

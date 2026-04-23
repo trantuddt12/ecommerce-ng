@@ -12,126 +12,249 @@ import { AuthStore } from '../state/auth.store';
   template: `
     <section class="client-shell">
       <header class="client-header">
-        <div class="client-branding">
-          <p class="client-eyebrow">Ecommerce Client</p>
-          <h1>My Orders</h1>
-        </div>
+        <div class="client-container client-header-inner">
+          <a class="client-branding" [routerLink]="APP_ROUTES.homeProducts">
+            <span class="client-brand-mark">TTL</span>
+            <span class="client-brand-copy">
+              <strong>TTL Dien may</strong>
+              <small>Mua sam nhanh, giao dien gon gang</small>
+            </span>
+          </a>
 
-        <nav class="client-nav" aria-label="Client navigation">
-          <a [routerLink]="APP_ROUTES.checkout" routerLinkActive="active">Checkout</a>
-          <a [routerLink]="APP_ROUTES.myOrders" routerLinkActive="active">Orders</a>
-        </nav>
+          <nav class="client-nav" aria-label="Client navigation">
+            <a [routerLink]="APP_ROUTES.homeProducts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">San pham</a>
+            @if (authStore.isAuthenticated()) {
+              <a [routerLink]="APP_ROUTES.checkout" routerLinkActive="active">Gio hang</a>
+              <a [routerLink]="APP_ROUTES.myOrders" routerLinkActive="active">Don hang</a>
+            } @else {
+              <a [routerLink]="APP_ROUTES.login" routerLinkActive="active">Dang nhap</a>
+            }
+          </nav>
 
-        <div class="client-user-box">
-          <div>
-            <strong>{{ authStore.currentUser()?.displayName || 'Guest' }}</strong>
-            <p>{{ authStore.currentUser()?.email || 'Chua dang nhap' }}</p>
+          <div class="client-user-box">
+            <div class="client-user-copy">
+              <strong>{{ authStore.currentUser()?.displayName || 'Khach vang lai' }}</strong>
+              <p>{{ authStore.currentUser()?.email || 'Chon san pham phu hop cho ban' }}</p>
+            </div>
+            @if (authStore.isAuthenticated()) {
+              <button type="button" class="client-action-button secondary" (click)="logout()">Dang xuat</button>
+            } @else {
+              <a class="client-action-button" [routerLink]="APP_ROUTES.login">Vao tai khoan</a>
+            }
           </div>
-          <button type="button" class="logout-button" (click)="logout()">Dang xuat</button>
         </div>
       </header>
 
       <main class="client-content">
-        <router-outlet></router-outlet>
+        <div class="client-container client-content-inner">
+          <router-outlet></router-outlet>
+        </div>
       </main>
+
+      <footer class="client-footer">
+        <div class="client-container client-footer-inner">
+          <span>TTL Ecommerce</span>
+          <span>Mua sam don gian, tap trung vao san pham va don hang</span>
+        </div>
+      </footer>
     </section>
   `,
   styles: [`
+    :host {
+      display: block;
+      min-height: 100vh;
+      background: #f8fafc;
+    }
+
     .client-shell {
       min-height: 100vh;
-      background: linear-gradient(180deg, #ecfeff 0%, #f8fafc 100%);
+      display: flex;
+      flex-direction: column;
     }
 
     .client-header {
       position: sticky;
       top: 0;
       z-index: 20;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-      background: rgba(255, 255, 255, 0.86);
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid #e2e8f0;
       backdrop-filter: blur(10px);
     }
 
-    .client-branding h1 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: #0f172a;
+    .client-container {
+      width: min(1200px, calc(100% - 2rem));
+      margin: 0 auto;
     }
 
-    .client-eyebrow {
-      margin: 0 0 0.2rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.7rem;
-      color: #0891b2;
+    .client-header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 0;
+      flex-wrap: wrap;
+    }
+
+    .client-branding {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: #0f172a;
+      text-decoration: none;
+      min-width: 0;
+    }
+
+    .client-brand-mark {
+      width: 2.75rem;
+      height: 2.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.9rem;
+      background: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .client-brand-copy {
+      display: grid;
+      gap: 0.15rem;
+    }
+
+    .client-brand-copy strong {
+      font-size: 1rem;
+    }
+
+    .client-brand-copy small,
+    .client-user-copy p {
+      color: #64748b;
+      font-size: 0.875rem;
     }
 
     .client-nav {
-      justify-self: center;
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(226, 232, 240, 0.55);
+      flex-wrap: wrap;
+    }
+
+    .client-nav a,
+    .client-action-button {
       border-radius: 999px;
-      padding: 0.25rem;
+      padding: 0.7rem 1rem;
+      text-decoration: none;
+      transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
     }
 
     .client-nav a {
-      color: #0f172a;
-      text-decoration: none;
-      border-radius: 999px;
-      padding: 0.5rem 0.85rem;
-      font-weight: 600;
-      font-size: 0.9rem;
+      color: #475569;
+      border: 1px solid transparent;
     }
 
-    .client-nav a.active {
-      color: #fff;
-      background: #0891b2;
+    .client-nav a.active,
+    .client-nav a:hover {
+      color: #0f172a;
+      background: #e2e8f0;
     }
 
     .client-user-box {
       display: flex;
       align-items: center;
-      gap: 0.8rem;
+      gap: 0.75rem;
+      min-width: 0;
     }
 
-    .client-user-box p {
+    .client-user-copy {
+      text-align: right;
+    }
+
+    .client-user-copy strong {
+      display: block;
+      color: #0f172a;
+      font-size: 0.95rem;
+    }
+
+    .client-user-copy p {
       margin: 0.2rem 0 0;
-      color: #64748b;
-      font-size: 0.8rem;
     }
 
-    .logout-button {
-      border: 0;
-      border-radius: 999px;
-      padding: 0.6rem 0.9rem;
-      color: #fff;
+    .client-action-button {
+      border: 1px solid #0f172a;
       background: #0f172a;
+      color: #ffffff;
       cursor: pointer;
+      font: inherit;
+      white-space: nowrap;
+    }
+
+    .client-action-button.secondary {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #cbd5e1;
     }
 
     .client-content {
-      padding: 1.25rem;
-      max-width: 1160px;
-      margin: 0 auto;
+      flex: 1;
+      padding: 1rem 0 1.5rem;
+    }
+
+    .client-content-inner {
+      min-width: 0;
+    }
+
+    .client-footer {
+      border-top: 1px solid #e2e8f0;
+      background: #ffffff;
+    }
+
+    .client-footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 0;
+      color: #64748b;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
     }
 
     @media (max-width: 960px) {
-      .client-header {
-        grid-template-columns: 1fr;
-      }
-
-      .client-nav {
-        justify-self: start;
+      .client-header-inner {
+        align-items: flex-start;
       }
 
       .client-user-box {
+        width: 100%;
         justify-content: space-between;
+      }
+
+      .client-user-copy {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .client-container {
+        width: min(100%, calc(100% - 1rem));
+      }
+
+      .client-header-inner,
+      .client-footer-inner {
+        gap: 0.75rem;
+      }
+
+      .client-nav {
+        width: 100%;
+      }
+
+      .client-nav a {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+
+      .client-user-box {
+        flex-direction: column;
+        align-items: stretch;
       }
     }
   `],
@@ -144,7 +267,7 @@ export class ClientLayoutComponent {
 
   logout(): void {
     this.authService.logout().subscribe(() => {
-      void this.router.navigate(['/auth/login']);
+      void this.router.navigate([APP_ROUTES.homeProducts]);
     });
   }
 }

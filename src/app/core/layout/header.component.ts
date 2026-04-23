@@ -24,12 +24,14 @@ import { AuthStore } from '../state/auth.store';
           <span></span>
         </button>
 
-        <div class="eyebrow">Ecommerce Admin</div>
-        <h1>Control Center</h1>
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h1>TTL Ecommerce</h1>
+        </div>
       </div>
 
       <div class="user-box">
-        <div>
+        <div class="user-copy">
           <strong>{{ authStore.currentUser()?.displayName || 'Guest' }}</strong>
           <p>{{ authStore.currentUser()?.email || 'Chua dang nhap' }}</p>
         </div>
@@ -46,9 +48,9 @@ import { AuthStore } from '../state/auth.store';
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
-      padding: 1.5rem 2rem;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-      background: rgba(255, 255, 255, 0.75);
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
@@ -58,17 +60,17 @@ import { AuthStore } from '../state/auth.store';
     .heading-group {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.875rem;
       min-width: 0;
     }
 
     .menu-button {
       display: none;
-      width: 2.75rem;
-      height: 2.75rem;
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      border-radius: 0.95rem;
-      background: rgba(255, 255, 255, 0.9);
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.8rem;
+      background: #ffffff;
       align-items: center;
       justify-content: center;
       flex-direction: column;
@@ -85,54 +87,58 @@ import { AuthStore } from '../state/auth.store';
     }
 
     .eyebrow {
+      margin: 0 0 0.2rem;
       text-transform: uppercase;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.14em;
       color: #64748b;
-      font-size: 0.75rem;
-      margin-bottom: 0.4rem;
+      font-size: 0.72rem;
     }
 
     h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.25rem;
+      color: #0f172a;
     }
 
     .user-box {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
-    p {
-      margin: 0.25rem 0 0;
+    .user-copy {
+      text-align: right;
+    }
+
+    .user-copy strong {
+      display: block;
+      color: #0f172a;
+      font-size: 0.95rem;
+    }
+
+    .user-copy p {
+      margin: 0.2rem 0 0;
       color: #64748b;
       font-size: 0.875rem;
     }
 
     .logout-button {
-      border: 0;
+      border: 1px solid #cbd5e1;
       border-radius: 999px;
-      background: #0f172a;
-      color: #fff;
-      padding: 0.8rem 1rem;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 0.7rem 1rem;
       cursor: pointer;
+      font: inherit;
     }
 
     @media (max-width: 960px) {
       .header {
-        padding: 1rem 1.25rem;
+        padding: 0.875rem 1rem;
       }
 
       .menu-button {
         display: inline-flex;
-      }
-
-      h1 {
-        font-size: 1.25rem;
-      }
-
-      .user-box {
-        align-items: flex-end;
       }
     }
 
@@ -145,6 +151,10 @@ import { AuthStore } from '../state/auth.store';
       .user-box {
         width: 100%;
         justify-content: space-between;
+      }
+
+      .user-copy {
+        text-align: left;
       }
     }
   `],

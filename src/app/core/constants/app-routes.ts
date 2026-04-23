@@ -1,4 +1,6 @@
 export const APP_ROUTES = {
+  home: '/home',
+  homeProducts: '/home/products',
   dashboard: '/admin/dashboard',
   users: '/admin/management/users',
   roles: '/admin/management/roles',
@@ -9,6 +11,7 @@ export const APP_ROUTES = {
   operations: '/admin/catalog/operations',
   search: '/admin/catalog/search',
   checkout: '/client/checkout',
+  login: '/auth/login',
   myOrders: '/client/orders/me',
   myOrderDetail: (id: string | number) => `/client/orders/me/${id}`,
   adminOrders: '/admin/orders',

@@ -8,77 +8,89 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, MatCardModule],
   template: `
     <section class="auth-layout">
-      <div class="auth-hero">
-        <p class="eyebrow">Angular Frontend</p>
-        <h1>Van hanh he thong ecommerce tren mot bo khung core ro rang.</h1>
-        <p>
-          Bo khung nay da duoc tach core, shared, features, san sang cho auth, route guard,
-          session refresh va cac module quan tri tiep theo.
-        </p>
-      </div>
+      <div class="auth-content">
+        <div class="auth-copy">
+          <p class="eyebrow">TTL Ecommerce</p>
+          <h1>Dang nhap de tiep tuc quan ly va mua sam.</h1>
+          <p>Giao dien duoc rut gon de tap trung vao thao tac dang nhap, dang ky va khoi phuc tai khoan.</p>
+        </div>
 
-      <mat-card class="auth-panel">
-        <router-outlet></router-outlet>
-      </mat-card>
+        <mat-card class="auth-panel">
+          <router-outlet></router-outlet>
+        </mat-card>
+      </div>
     </section>
   `,
   styles: [`
     .auth-layout {
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      background: radial-gradient(circle at top left, #1d4ed8, #0f172a 55%);
-      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
     }
 
-    .auth-hero,
-    .auth-panel {
-      padding: 3rem;
-      display: flex;
+    .auth-content {
+      width: min(960px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 1.5rem;
       align-items: center;
     }
 
-    .auth-hero {
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .auth-panel {
-      background: rgba(255, 255, 255, 0.98);
+    .auth-copy {
       color: #0f172a;
-      justify-content: center;
-      border-radius: 0;
-      box-shadow: none;
+      display: grid;
+      gap: 1rem;
     }
 
     .eyebrow {
       margin: 0;
       text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: #93c5fd;
+      letter-spacing: 0.18em;
+      color: #2563eb;
       font-size: 0.75rem;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(2.2rem, 4vw, 4.2rem);
-      line-height: 1.05;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 1.08;
     }
 
     p {
-      max-width: 36rem;
-      color: rgba(255, 255, 255, 0.82);
+      margin: 0;
+      color: #475569;
+      max-width: 34rem;
+    }
+
+    .auth-panel {
+      padding: 0.5rem;
+      border-radius: 1.25rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+      background: rgba(255, 255, 255, 0.96);
     }
 
     @media (max-width: 960px) {
-      .auth-layout {
+      .auth-content {
         grid-template-columns: 1fr;
       }
 
-      .auth-hero {
-        padding-bottom: 0;
+      .auth-copy {
+        text-align: center;
+        justify-items: center;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .auth-layout {
+        padding: 1rem;
+      }
+
+      .auth-content {
+        gap: 1rem;
       }
     }
   `],

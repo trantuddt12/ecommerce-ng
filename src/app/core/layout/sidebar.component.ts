@@ -13,8 +13,8 @@ import { hasAnyPermission } from '../utils/permission.util';
     <aside id="app-sidebar" class="sidebar" [class.open]="isOpen()">
       <div class="sidebar-header">
         <div>
-          <p class="sidebar-eyebrow">Navigation</p>
-          <strong>Workspace</strong>
+          <p class="sidebar-eyebrow">Dieu huong</p>
+          <strong>Quan tri</strong>
         </div>
 
         <button type="button" class="close-button" (click)="navigate.emit()" aria-label="Dong menu">
@@ -22,30 +22,34 @@ import { hasAnyPermission } from '../utils/permission.util';
         </button>
       </div>
 
-      @for (item of menuItems; track item.path) {
-        @if (!item.permissions || canAccess(item.permissions)) {
-          <a [routerLink]="item.path" routerLinkActive="active" (click)="navigate.emit()">{{ item.label }}</a>
+      <nav class="sidebar-nav" aria-label="Admin navigation">
+        @for (item of menuItems; track item.path) {
+          @if (!item.permissions || canAccess(item.permissions)) {
+            <a [routerLink]="item.path" routerLinkActive="active" (click)="navigate.emit()">{{ item.label }}</a>
+          }
         }
-      }
+      </nav>
     </aside>
   `,
   styles: [`
     .sidebar {
       display: grid;
-      gap: 0.5rem;
+      gap: 1rem;
       padding: 1rem;
-      background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-      border-radius: 1.25rem;
-      min-height: 100%;
+      background: #0f172a;
+      border-radius: 1rem;
+      min-height: calc(100vh - 5.5rem);
       align-content: start;
+      position: sticky;
+      top: 5rem;
     }
 
     .sidebar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.35rem 0.25rem 0.85rem;
-      color: #fff;
+      padding-bottom: 0.25rem;
+      color: #ffffff;
     }
 
     .sidebar-eyebrow {
@@ -59,6 +63,11 @@ import { hasAnyPermission } from '../utils/permission.util';
     strong {
       font-size: 1rem;
       font-weight: 700;
+    }
+
+    .sidebar-nav {
+      display: grid;
+      gap: 0.35rem;
     }
 
     .close-button {
@@ -76,23 +85,25 @@ import { hasAnyPermission } from '../utils/permission.util';
     a {
       color: #cbd5e1;
       text-decoration: none;
-      padding: 0.85rem 1rem;
-      border-radius: 0.85rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 0.8rem;
+      border: 1px solid transparent;
     }
 
     a.active,
     a:hover {
       background: rgba(255, 255, 255, 0.08);
       color: #fff;
+      border-color: rgba(255, 255, 255, 0.08);
     }
 
     @media (max-width: 960px) {
       .sidebar {
         position: fixed;
-        top: 1rem;
-        left: 1rem;
-        bottom: 1rem;
-        width: min(20rem, calc(100vw - 2rem));
+        top: 0.75rem;
+        left: 0.75rem;
+        bottom: 0.75rem;
+        width: min(18rem, calc(100vw - 1.5rem));
         min-height: auto;
         z-index: 30;
         box-shadow: 0 24px 48px rgba(15, 23, 42, 0.35);
