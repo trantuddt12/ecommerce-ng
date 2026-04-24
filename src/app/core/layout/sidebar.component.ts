@@ -135,6 +135,7 @@ export class SidebarComponent {
     { label: 'Brands', path: APP_ROUTES.brands, permissions: ['BRAND_MANAGE', 'BRAND_VIEW'] },
     { label: 'Categories', path: APP_ROUTES.categories, permissions: ['CATEGORY_MANAGE', 'CATEGORY_VIEW'] },
     { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
+    { label: 'Inventory', path: APP_ROUTES.inventory, permissions: ['INVENTORY_MANAGE', 'INVENTORY_VIEW'] },
     { label: 'Attributes', path: APP_ROUTES.attributes, permissions: ['ATTRIBUTE_MANAGE', 'ATTRIBUTE_VIEW'] },
     { label: 'Admin Orders', path: APP_ROUTES.adminOrders, permissions: ['ORDER_VIEW'] },
     {

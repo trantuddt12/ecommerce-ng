@@ -157,6 +157,10 @@ export interface CartItem {
   compareAtPrice: number | null;
   lineSubtotal: number;
   availableQty: number | null;
+  inventoryStatus?: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'BACKORDERABLE' | null;
+  canAddToCart?: boolean | null;
+  canCheckout?: boolean | null;
+  lowStockMessage?: string | null;
 }
 
 export interface Cart {

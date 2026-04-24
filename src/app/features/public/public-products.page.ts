@@ -271,6 +271,10 @@ interface HomePromoItem {
                   <p>{{ product.categoryName || 'Danh muc dien may' }}</p>
                   <h4 class="home-product-title">{{ product.name }}</h4>
                   <strong class="home-product-price">{{ formatCurrency(product.price) }}</strong>
+                  <div class="home-product-inventory">{{ inventoryLabel(product) }}</div>
+                  @if (product.lowStockMessage) {
+                    <div class="home-product-low-stock">{{ product.lowStockMessage }}</div>
+                  }
                 </div>
 
                 <div class="home-product-actions">
@@ -423,7 +427,23 @@ export class PublicProductsPage implements OnInit {
   }
 
   isPurchasable(product: AdminProductListItem): boolean {
-    return product.status === 'ACTIVE' && product.variantCount > 0;
+    return product.status === 'ACTIVE' && product.variantCount > 0 && (product.canCheckout ?? product.canAddToCart ?? true);
+  }
+
+  inventoryLabel(product: AdminProductListItem): string {
+    if (product.inventoryStatus === 'OUT_OF_STOCK') {
+      return 'Het hang';
+    }
+
+    if (product.inventoryStatus === 'LOW_STOCK') {
+      return `Sap het hang${product.availableQty !== null && product.availableQty !== undefined ? ` · con ${product.availableQty}` : ''}`;
+    }
+
+    if (product.availableQty !== null && product.availableQty !== undefined) {
+      return `Con hang · ${product.availableQty}`;
+    }
+
+    return product.inventoryStatus || 'Con hang';
   }
 
   resolveProductImageUrl(product: AdminProductListItem): string | null {

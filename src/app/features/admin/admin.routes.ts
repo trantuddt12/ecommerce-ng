@@ -12,6 +12,7 @@ import { RolesPage } from '../management/roles/roles.page';
 import { UsersPage } from '../management/users/users.page';
 import { AdminOrderDetailPage } from '../order/admin-order-detail/admin-order-detail.page';
 import { AdminOrdersPage } from '../order/admin-orders/admin-orders.page';
+import { InventoryPage } from '../catalog/inventory/inventory.page';
 import { SearchPage } from '../search/search.page';
 
 export const adminRoutes: Routes = [
@@ -50,6 +51,12 @@ export const adminRoutes: Routes = [
         component: ProductsPage,
         canActivate: [permissionGuard],
         data: { permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
+      },
+      {
+        path: 'catalog/inventory',
+        component: InventoryPage,
+        canActivate: [permissionGuard],
+        data: { permissions: ['INVENTORY_VIEW', 'INVENTORY_MANAGE'] },
       },
       {
         path: 'catalog/attributes',

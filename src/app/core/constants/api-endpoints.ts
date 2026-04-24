@@ -70,6 +70,12 @@ export const API_ENDPOINTS = {
     deleteImage: (id: string | number, imageId: string | number) => `/products/${id}/images/${imageId}`,
     thumbnail: (id: string | number, imageId: string | number) => `/products/${id}/images/${imageId}/thumbnail`,
   },
+  inventory: {
+    list: '/admin/inventories',
+    byVariantId: (variantId: string | number) => `/admin/inventories/${variantId}`,
+    movements: (variantId: string | number) => `/admin/inventories/${variantId}/movements`,
+    adjustments: (variantId: string | number) => `/admin/inventories/${variantId}/adjustments`,
+  },
   attribute: {
     list: '/attributes',
     create: '/attributes',

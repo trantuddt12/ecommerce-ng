@@ -7,6 +7,7 @@ export const APP_ROUTES = {
   brands: '/admin/catalog/brands',
   categories: '/admin/catalog/categories',
   products: '/admin/catalog/products',
+  inventory: '/admin/catalog/inventory',
   attributes: '/admin/catalog/attributes',
   operations: '/admin/catalog/operations',
   search: '/admin/catalog/search',

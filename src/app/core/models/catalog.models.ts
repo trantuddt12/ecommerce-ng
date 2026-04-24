@@ -92,6 +92,27 @@ export interface PagedResult<T> {
   size: number;
 }
 
+export type InventoryStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'BACKORDERABLE';
+
+export type InventoryMovementType =
+  | 'RECEIVE'
+  | 'RESERVE'
+  | 'RELEASE'
+  | 'DEDUCT'
+  | 'ADJUST_IN'
+  | 'ADJUST_OUT'
+  | 'RETURN_RECEIVED'
+  | 'RESTOCK'
+  | 'SCRAP';
+
+export type InventoryReferenceType = 'PRODUCT_INIT' | 'ORDER' | 'ADJUSTMENT' | 'RETURN';
+
+export type InventoryAdjustmentType = 'IN' | 'OUT';
+
+export type InventoryAdjustmentReasonCode = 'LOST' | 'DAMAGED' | 'COUNT_FIX' | 'FOUND' | 'MANUAL';
+
+export type InventorySortBy = 'lastModifiedAt' | 'onHandQty' | 'reservedQty' | 'id';
+
 export interface CategoryMutationRequest {
   code: string;
   name: string;
@@ -198,6 +219,74 @@ export interface InventorySummary {
   onHandQty: number;
   reservedQty: number;
   availableQty: number;
+  inventoryStatus?: InventoryStatus | null;
+  canAddToCart?: boolean | null;
+  canCheckout?: boolean | null;
+  lowStockMessage?: string | null;
+  lowStockThreshold?: number | null;
+}
+
+export interface InventoryQuery {
+  keyword?: string | null;
+  inventoryStatus?: InventoryStatus | null;
+  categoryId?: number | null;
+  brandId?: number | null;
+  page?: number;
+  size?: number;
+  sortBy?: InventorySortBy;
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface AdminInventoryListItem {
+  variantId: number;
+  sku: string;
+  productId: number;
+  productName: string;
+  onHandQty: number;
+  reservedQty: number;
+  availableQty: number;
+  inventoryStatus: InventoryStatus;
+  updatedAt: string;
+  lowStockThreshold: number | null;
+  lowStockMessage: string | null;
+}
+
+export interface InventoryMovement {
+  id: number;
+  variantId: number;
+  movementType: InventoryMovementType;
+  quantity: number;
+  beforeOnHandQty: number;
+  afterOnHandQty: number;
+  beforeReservedQty: number;
+  afterReservedQty: number;
+  referenceType: InventoryReferenceType;
+  referenceId: string;
+  note: string | null;
+  performedBy: string;
+  performedAt: string;
+}
+
+export interface AdminInventoryDetail {
+  variantId: number;
+  sku: string;
+  productId: number;
+  productName: string;
+  onHandQty: number;
+  reservedQty: number;
+  availableQty: number;
+  inventoryStatus: InventoryStatus;
+  updatedAt: string;
+  lowStockThreshold: number | null;
+  lowStockMessage: string | null;
+  recentMovements: InventoryMovement[];
+}
+
+export interface AdminInventoryAdjustmentRequest {
+  adjustmentType: InventoryAdjustmentType;
+  quantity: number;
+  reasonCode: InventoryAdjustmentReasonCode;
+  note?: string | null;
 }
 
 export interface AdminProductVariant {
@@ -238,6 +327,11 @@ export interface AdminProductListItem {
   variantCount: number;
   price: number | null;
   thumbnailUrl: string | null;
+  availableQty?: number | null;
+  inventoryStatus?: InventoryStatus | null;
+  canAddToCart?: boolean | null;
+  canCheckout?: boolean | null;
+  lowStockMessage?: string | null;
   images: ProductImage[];
 }
 

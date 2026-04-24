@@ -141,8 +141,8 @@ import { NotificationService } from '../../../core/services/notification.service
                 <p><strong>Discount:</strong> {{ pricingDiscount() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
                 <p><strong>Shipping:</strong> {{ pricingShippingFee() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
                 <p class="order-total"><strong>Grand total:</strong> {{ pricingGrandTotal() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
-                @if (cart()!.voucherCode) {
-                  <mat-chip class="order-chip">Voucher: {{ cart()!.voucherCode }}</mat-chip>
+                @if (cart()) {
+                  <mat-chip class="order-chip">{{ checkoutAvailabilityLabel() }}</mat-chip>
                 }
               </div>
 
@@ -152,6 +152,13 @@ import { NotificationService } from '../../../core/services/notification.service
                     <div>
                       <strong>{{ item.productName }}</strong>
                       <div class="order-muted">{{ item.variantName || item.sku }}</div>
+                      @if (item.lowStockMessage) {
+                        <div class="order-stock-warning">{{ item.lowStockMessage }}</div>
+                      } @else if (item.quantity > (item.availableQty ?? item.quantity)) {
+                        <div class="order-stock-warning">So luong vuot ton kha dung.</div>
+                      } @else if (item.inventoryStatus === 'OUT_OF_STOCK') {
+                        <div class="order-stock-warning">San pham da het hang.</div>
+                      }
                     </div>
                     <div class="order-item-right">
                       <span>x{{ item.quantity }}</span>
@@ -332,6 +339,11 @@ import { NotificationService } from '../../../core/services/notification.service
       border: 1px solid rgba(248, 113, 113, 0.28);
     }
 
+    .order-stock-warning {
+      color: #b45309;
+      font-size: 0.82rem;
+    }
+
     @keyframes order-fade-in {
       from {
         opacity: 0;
@@ -429,6 +441,11 @@ export class CheckoutPage {
   }
 
   protected checkout(): void {
+    if (!this.isCartCheckoutAllowed()) {
+      this.notifications.error('Gio hang hien tai co san pham khong du ton de checkout.');
+      return;
+    }
+
     if (!this.form.recipientName.trim() || !this.form.recipientPhone.trim() || !this.form.addressLine1.trim()) {
       this.notifications.error('Can nhap recipient name, recipient phone va address line 1.');
       return;
@@ -464,7 +481,21 @@ export class CheckoutPage {
           const mapped = this.errorMapper.map(error);
           this.errorMessage.set(mapped.message);
           this.notifications.error(mapped.message);
+          this.loadCartAndPricing();
         },
       });
+  }
+
+  protected isCartCheckoutAllowed(): boolean {
+    const cart = this.cart();
+    if (!cart) {
+      return false;
+    }
+
+    return cart.items.every((item) => (item.canCheckout ?? true) && item.quantity <= (item.availableQty ?? item.quantity));
+  }
+
+  protected checkoutAvailabilityLabel(): string {
+    return this.isCartCheckoutAllowed() ? 'Co the checkout' : 'Can cap nhat lai ton kho';
   }
 }
