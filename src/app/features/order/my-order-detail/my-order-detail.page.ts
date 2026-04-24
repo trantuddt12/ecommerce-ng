@@ -245,10 +245,11 @@ export class MyOrderDetailPage {
   protected readonly order = signal<OrderDetail | null>(null);
   protected cancelReason = '';
 
-  protected readonly canCancel = computed(() => {
-    const status = this.order()?.orderStatus;
-    return status === 'PENDING_CONFIRMATION' || status === 'CONFIRMED';
-  });
+  protected readonly canCancel = computed(() => !!this.order()?.canCancel);
+
+  protected readonly canReturn = computed(() => !!this.order()?.canReturn);
+
+  protected readonly canPay = computed(() => !!this.order()?.canPay);
 
   protected readonly fullAddress = computed(() => {
     const value = this.order();

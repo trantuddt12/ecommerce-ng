@@ -119,8 +119,11 @@ export const API_ENDPOINTS = {
     create: '/orders',
     byId: (id: string | number) => `/orders/${id}`,
     adminStatus: (id: string | number) => `/orders/${id}/admin-status`,
+    paymentStatus: (id: string | number) => `/orders/${id}/payment-status`,
+    fulfillment: (id: string | number) => `/orders/${id}/fulfillment`,
     myList: '/orders/me',
     myById: (id: string | number) => `/orders/me/${id}`,
     myCancel: (id: string | number) => `/orders/me/${id}/cancel`,
+    myReturnRequest: (id: string | number) => `/orders/me/${id}/return-requests`,
   },
 } as const;
