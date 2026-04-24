@@ -13,15 +13,17 @@ Quy trinh thuc thi thay doi code trong repo nay theo cach it rui ro nhat.
 5. Sua code.
 6. Kiem tra lai import, route, endpoint, va luong auth.
 7. Neu co the, build hoac test phan bi anh huong.
-8. Ghi vao `D:/Spring/ttl-project/AI_PROGRESS.md` cac file da sua, tom tat thay doi, ket qua verify, va todo tiep theo.
-9. Cap nhat tai lieu `AI/` neu thay doi lam doi quy tac hoac kien truc.
+8. Ghi vao workspace root `AI_PROGRESS/YYYY-MM-DD.md` cac file da sua, tom tat thay doi, ket qua verify, va todo tiep theo.
+9. Giu workspace root `AI_PROGRESS.md` lam file muc luc/huong dan; chi sua file nay khi doi cau truc logging.
+10. Cap nhat tai lieu `AI/` neu thay doi lam doi quy tac hoac kien truc.
 
 ## Quy tac nhat ky tien trinh
 
-- Sau moi lan thay doi, append mot muc moi vao cuoi file `D:/Spring/ttl-project/AI_PROGRESS.md`.
+- Sau moi lan thay doi, append mot muc moi vao cuoi file workspace root `AI_PROGRESS/YYYY-MM-DD.md` cua ngay hien tai.
 - Muc ghi nhan phai co it nhat: scope, file da doi, tom tat, verification, todo tiep theo.
 - Neu task lien quan ca frontend va backend, ghi ro handoff hoac dependency de ben con lai tiep tuc duoc ngay.
 - Khong xoa muc cu. Neu todo da xong, danh dau trang thai trong muc moi.
+- Khong append lich su chi tiet vao workspace root `AI_PROGRESS.md`; file do chi dung lam muc luc va huong dan.
 
 ## Khong nen lam
 

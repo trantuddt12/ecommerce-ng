@@ -39,4 +39,5 @@ Thu muc `AI/` la bo tai lieu van hanh de agent, AI assistant, va thanh vien du a
 - Khi team doi convention, cap nhat `instructions/`.
 - Khi co task lap lai moi, bo sung `prompts/` hoac `workflows/`.
 - Khong tron `AI/workflows/` voi `.agents/skills/`: `AI/` la tai lieu noi bo cua repo, con `.agents/skills/` la skill cai boi CLI.
-- Sau moi lan thay doi code hoac tai lieu, ghi nhan thay doi, kiem tra, va todo vao file chung `D:/Spring/ttl-project/AI_PROGRESS.md` de backend va frontend cung follow duoc.
+- Sau moi lan thay doi code hoac tai lieu, ghi nhan thay doi, kiem tra, va todo vao workspace root `AI_PROGRESS/YYYY-MM-DD.md` de backend va frontend cung follow duoc.
+- Giu workspace root `AI_PROGRESS.md` lam file muc luc/huong dan, khong dung no de append lich su chi tiet hang ngay.
