@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
 import { permissionGuard } from '../../core/guards/permission.guard';
 import { ClientLayoutComponent } from '../../core/layout/client-layout.component';
+import { CartPage } from '../order/cart/cart.page';
 import { CheckoutPage } from '../order/checkout/checkout.page';
 import { MyOrderDetailPage } from '../order/my-order-detail/my-order-detail.page';
 import { MyOrdersPage } from '../order/my-orders/my-orders.page';
@@ -13,6 +14,11 @@ export const clientRoutes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [permissionGuard],
     children: [
+      {
+        path: 'cart',
+        component: CartPage,
+        data: { roles: ['CUSTOMER'] },
+      },
       {
         path: 'checkout',
         component: CheckoutPage,
@@ -28,7 +34,7 @@ export const clientRoutes: Routes = [
         component: MyOrderDetailPage,
         data: { roles: ['CUSTOMER'] },
       },
-      { path: '', pathMatch: 'full', redirectTo: 'orders/me' },
+      { path: '', pathMatch: 'full', redirectTo: 'cart' },
     ],
   },
 ];

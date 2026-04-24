@@ -89,7 +89,7 @@ interface HomePromoItem {
 
               <div class="home-hero-actions">
                 <button class="home-primary-action" type="button" (click)="resetFilters()" [disabled]="loading()">Xem tat ca uu dai</button>
-                <a class="home-secondary-action" [routerLink]="APP_ROUTES.checkout">Mo gio hang</a>
+                <a class="home-secondary-action" [routerLink]="APP_ROUTES.cart">Mo gio hang</a>
               </div>
 
               <div class="home-highlights">
@@ -278,7 +278,7 @@ interface HomePromoItem {
                 </div>
 
                 <div class="home-product-actions">
-                  <a mat-stroked-button [routerLink]="APP_ROUTES.checkout">Xem gio hang</a>
+                  <a mat-stroked-button [routerLink]="APP_ROUTES.cart">Xem gio hang</a>
                   <button mat-flat-button color="primary" type="button" (click)="buyNow(product)" [disabled]="buyingProductId() === product.id || !isPurchasable(product)">
                     {{ buyingProductId() === product.id ? 'Dang them...' : 'Mua ngay' }}
                   </button>
@@ -413,7 +413,7 @@ export class PublicProductsPage implements OnInit {
         this.cartApi.upsertItem({ variantId: variant.id, quantity: 1 }).subscribe({
           next: () => {
             this.notificationService.success(`Da them ${product.name} vao gio hang.`);
-            void this.router.navigate([APP_ROUTES.checkout]);
+            void this.router.navigate([APP_ROUTES.cart]);
           },
           error: (error) => {
             this.notificationService.error(this.errorMapper.map(error).message);

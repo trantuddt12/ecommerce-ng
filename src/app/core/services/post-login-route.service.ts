@@ -12,7 +12,7 @@ export class PostLoginRouteService {
     const roles = new Set(this.authStore.roles());
 
     if (roles.has('CUSTOMER')) {
-      return APP_ROUTES.myOrders;
+      return APP_ROUTES.cart;
     }
 
     if (hasAnyPermission(permissions, ['USER_VIEW'])) {

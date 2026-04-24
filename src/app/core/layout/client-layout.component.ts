@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { APP_ROUTES } from '../constants/app-routes';
 import { AuthService } from '../services/auth.service';
 import { AuthStore } from '../state/auth.store';
+import { CartStore } from '../state/cart.store';
 
 @Component({
   selector: 'app-client-layout',
@@ -24,7 +25,7 @@ import { AuthStore } from '../state/auth.store';
           <nav class="client-nav" aria-label="Client navigation">
             <a [routerLink]="APP_ROUTES.homeProducts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">San pham</a>
             @if (authStore.isAuthenticated()) {
-              <a [routerLink]="APP_ROUTES.checkout" routerLinkActive="active">Gio hang</a>
+              <a [routerLink]="APP_ROUTES.cart" routerLinkActive="active">Gio hang <span class="client-cart-badge">{{ cartCount() }}</span></a>
               <a [routerLink]="APP_ROUTES.myOrders" routerLinkActive="active">Don hang</a>
             } @else {
               <a [routerLink]="APP_ROUTES.login" routerLinkActive="active">Dang nhap</a>
@@ -147,6 +148,21 @@ import { AuthStore } from '../state/auth.store';
       transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
     }
 
+    .client-cart-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.3rem;
+      height: 1.3rem;
+      margin-left: 0.4rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
     .client-nav a {
       color: #475569;
       border: 1px solid transparent;
@@ -262,8 +278,24 @@ import { AuthStore } from '../state/auth.store';
 export class ClientLayoutComponent {
   protected readonly APP_ROUTES = APP_ROUTES;
   protected readonly authStore = inject(AuthStore);
+  protected readonly cartCount = computed(() => this.cartStore.cart()?.totalItems ?? 0);
   private readonly authService = inject(AuthService);
+  private readonly cartStore = inject(CartStore);
   private readonly router = inject(Router);
+
+  constructor() {
+    effect(() => {
+      if (!this.authStore.isAuthenticated()) {
+        return;
+      }
+
+      if (!this.cartStore.cart()) {
+        this.cartStore.loadCart().subscribe({
+          error: () => undefined,
+        });
+      }
+    });
+  }
 
   logout(): void {
     this.authService.logout().subscribe(() => {

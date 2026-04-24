@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -10,10 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { finalize } from 'rxjs';
 import { APP_ROUTES } from '../../../core/constants/app-routes';
-import { Cart, CheckoutFromCartRequest } from '../../../core/models/order.models';
-import { CartApiService } from '../../../core/services/cart-api.service';
+import { CheckoutFromCartRequest } from '../../../core/models/order.models';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { CartStore } from '../../../core/state/cart.store';
 
 @Component({
   selector: 'app-checkout-page',
@@ -21,6 +21,7 @@ import { NotificationService } from '../../../core/services/notification.service
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     MatButtonModule,
     MatCardModule,
     MatChipsModule,
@@ -32,14 +33,20 @@ import { NotificationService } from '../../../core/services/notification.service
     <section class="order-page">
       <mat-card class="order-hero">
         <mat-card-content>
-          <p class="order-eyebrow">Checkout</p>
-          <h2>Hoan tat don hang</h2>
-          <p>Flow nay map truc tiep voi <code>GET /carts/me</code>, <code>GET /carts/me/pricing-preview</code> va <code>PATCH /carts/me/checkout</code>.</p>
+          <div>
+            <p class="order-eyebrow">Checkout</p>
+            <h2>Hoan tat don hang</h2>
+            <p>Thong tin cart, pricing preview va order submit deu di truc tiep qua cart backend.</p>
+          </div>
+          <div class="order-hero-actions">
+            <a mat-stroked-button [routerLink]="APP_ROUTES.cart">Ve gio hang</a>
+            <button mat-flat-button color="primary" type="button" (click)="loadCartAndPricing()" [disabled]="loading()">Tai lai</button>
+          </div>
         </mat-card-content>
       </mat-card>
 
-      @if (errorMessage()) {
-        <div class="order-error">{{ errorMessage() }}</div>
+      @if (cartStore.checkoutError()) {
+        <div class="order-error">{{ cartStore.checkoutError() }}</div>
       }
 
       <section class="order-grid">
@@ -52,75 +59,75 @@ import { NotificationService } from '../../../core/services/notification.service
             <div class="order-panel-header">
               <div>
                 <h3>Thong tin giao nhan</h3>
-                <p>Nhap du lieu nguoi nhan va dia chi giao hang.</p>
+                <p>Validate client-side cho cac truong bat buoc toi thieu truoc khi submit.</p>
               </div>
-              <button mat-stroked-button type="button" (click)="loadCartAndPricing()" [disabled]="loading()">Tai lai cart</button>
             </div>
 
             <div class="order-form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Recipient name</mat-label>
-                <input matInput [(ngModel)]="form.recipientName" />
+                <mat-label>Ten nguoi nhan</mat-label>
+                <input matInput [(ngModel)]="form.recipientName" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Recipient phone</mat-label>
-                <input matInput [(ngModel)]="form.recipientPhone" />
+                <mat-label>So dien thoai</mat-label>
+                <input matInput [(ngModel)]="form.recipientPhone" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Province code</mat-label>
-                <input matInput [(ngModel)]="form.provinceCode" />
+                <mat-label>Ma tinh/thanh</mat-label>
+                <input matInput [(ngModel)]="form.provinceCode" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>District code</mat-label>
-                <input matInput [(ngModel)]="form.districtCode" />
+                <mat-label>Ma quan/huyen</mat-label>
+                <input matInput [(ngModel)]="form.districtCode" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Ward code</mat-label>
-                <input matInput [(ngModel)]="form.wardCode" />
+                <mat-label>Ma phuong/xa</mat-label>
+                <input matInput [(ngModel)]="form.wardCode" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Address line 1</mat-label>
-                <input matInput [(ngModel)]="form.addressLine1" />
+                <mat-label>Dia chi nhan hang</mat-label>
+                <input matInput [(ngModel)]="form.addressLine1" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Address line 2</mat-label>
-                <input matInput [(ngModel)]="form.addressLine2" />
+                <mat-label>Dia chi bo sung</mat-label>
+                <input matInput [(ngModel)]="form.addressLine2" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Shipping method code</mat-label>
-                <input matInput [(ngModel)]="form.shippingMethodCode" placeholder="GHN_STANDARD" />
+                <mat-label>Ma van chuyen</mat-label>
+                <input matInput [(ngModel)]="form.shippingMethodCode" placeholder="GHN_STANDARD" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Shipping method name</mat-label>
-                <input matInput [(ngModel)]="form.shippingMethodName" placeholder="Giao hang tieu chuan" />
+                <mat-label>Ten hinh thuc giao</mat-label>
+                <input matInput [(ngModel)]="form.shippingMethodName" placeholder="Giao hang tieu chuan" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Payment method code</mat-label>
-                <input matInput [(ngModel)]="form.paymentMethodCode" placeholder="COD" />
+                <mat-label>Ma thanh toan</mat-label>
+                <input matInput [(ngModel)]="form.paymentMethodCode" placeholder="COD" [disabled]="loading()" />
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Payment method name</mat-label>
-                <input matInput [(ngModel)]="form.paymentMethodName" placeholder="Thanh toan khi nhan hang" />
+                <mat-label>Ten hinh thuc thanh toan</mat-label>
+                <input matInput [(ngModel)]="form.paymentMethodName" placeholder="Thanh toan khi nhan hang" [disabled]="loading()" />
               </mat-form-field>
             </div>
 
             <mat-form-field appearance="outline">
-              <mat-label>Customer note</mat-label>
-              <textarea matInput rows="3" [(ngModel)]="form.customerNote"></textarea>
+              <mat-label>Ghi chu khach hang</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="form.customerNote" [disabled]="loading()"></textarea>
             </mat-form-field>
 
             <div class="order-actions">
-              <button mat-flat-button color="primary" type="button" (click)="checkout()" [disabled]="loading()">Dat hang</button>
+              <button mat-flat-button color="primary" type="button" (click)="checkout()" [disabled]="loading() || !canSubmit()">Dat hang</button>
+              <a mat-stroked-button [routerLink]="APP_ROUTES.cart">Quay lai gio hang</a>
             </div>
           </mat-card-content>
         </mat-card>
@@ -129,46 +136,54 @@ import { NotificationService } from '../../../core/services/notification.service
           <mat-card-content>
             <div class="order-panel-header">
               <div>
-                <h3>Cart va pricing</h3>
-                <p>Tong hop theo response backend truoc khi checkout.</p>
+                <h3>Tom tat thanh toan</h3>
+                <p>Du lieu hien thi theo cart/pricing preview moi nhat.</p>
               </div>
             </div>
 
-            @if (cart()) {
+            @if (cart(); as currentCart) {
               <div class="order-summary">
-                <p><strong>Items:</strong> {{ cart()!.totalItems }}</p>
-                <p><strong>Subtotal:</strong> {{ cart()!.subtotalAmount | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
-                <p><strong>Discount:</strong> {{ pricingDiscount() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
-                <p><strong>Shipping:</strong> {{ pricingShippingFee() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
-                <p class="order-total"><strong>Grand total:</strong> {{ pricingGrandTotal() | number: '1.0-0' }} {{ cart()!.currencyCode || 'VND' }}</p>
-                @if (cart()) {
-                  <mat-chip class="order-chip">{{ checkoutAvailabilityLabel() }}</mat-chip>
-                }
+                <p><strong>So san pham:</strong> {{ currentCart.totalItems }}</p>
+                <p><strong>Tam tinh:</strong> {{ formatCurrency(currentCart.subtotalAmount, currentCart.currencyCode) }}</p>
+                <p><strong>Giam gia:</strong> {{ formatCurrency(pricingPreview()?.discountAmount ?? currentCart.discountAmount, currentCart.currencyCode) }}</p>
+                <p><strong>Van chuyen:</strong> {{ formatCurrency(pricingPreview()?.shippingFee ?? 0, currentCart.currencyCode) }}</p>
+                <p class="order-total"><strong>Thanh tien:</strong> {{ formatCurrency(pricingPreview()?.grandTotal ?? currentCart.grandTotal, currentCart.currencyCode) }}</p>
+                <mat-chip class="order-chip">{{ checkoutAvailabilityLabel() }}</mat-chip>
               </div>
 
+              @if (currentCart.voucherCode) {
+                <div class="order-voucher-box">
+                  <strong>Voucher: {{ currentCart.voucherCode }}</strong>
+                  <span>{{ currentCart.voucherType === 'PERCENT' ? ('Giam ' + (currentCart.voucherValue ?? 0) + '%') : 'Da ap dung giam gia' }}</span>
+                </div>
+              }
+
               <div class="order-item-list">
-                @for (item of cart()!.items; track item.id) {
+                @for (item of currentCart.items; track item.variantId) {
                   <div class="order-item">
                     <div>
                       <strong>{{ item.productName }}</strong>
                       <div class="order-muted">{{ item.variantName || item.sku }}</div>
+                      @if (item.variantAttributes) {
+                        <div class="order-muted">{{ item.variantAttributes }}</div>
+                      }
                       @if (item.lowStockMessage) {
                         <div class="order-stock-warning">{{ item.lowStockMessage }}</div>
-                      } @else if (item.quantity > (item.availableQty ?? item.quantity)) {
-                        <div class="order-stock-warning">So luong vuot ton kha dung.</div>
                       } @else if (item.inventoryStatus === 'OUT_OF_STOCK') {
                         <div class="order-stock-warning">San pham da het hang.</div>
+                      } @else if (item.quantity > (item.availableQty ?? item.quantity)) {
+                        <div class="order-stock-warning">So luong dang vuot ton kha dung.</div>
                       }
                     </div>
                     <div class="order-item-right">
                       <span>x{{ item.quantity }}</span>
-                      <strong>{{ item.lineSubtotal | number: '1.0-0' }}</strong>
+                      <strong>{{ formatCurrency(item.lineSubtotal, currentCart.currencyCode) }}</strong>
                     </div>
                   </div>
                 }
               </div>
             } @else {
-              <div class="order-empty">Chua tai duoc gio hang.</div>
+              <div class="order-empty">Gio hang dang trong hoac chua tai duoc.</div>
             }
           </mat-card-content>
         </mat-card>
@@ -192,9 +207,11 @@ import { NotificationService } from '../../../core/services/notification.service
     }
 
     .order-hero .mat-mdc-card-content {
-      display: grid;
+      display: flex;
+      justify-content: space-between;
       gap: 0.75rem;
       padding: 1.5rem;
+      flex-wrap: wrap;
     }
 
     .order-eyebrow {
@@ -213,6 +230,12 @@ import { NotificationService } from '../../../core/services/notification.service
     .order-hero p {
       margin: 0;
       color: rgba(224, 242, 254, 0.92);
+    }
+
+    .order-hero-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .order-grid {
@@ -271,7 +294,8 @@ import { NotificationService } from '../../../core/services/notification.service
       gap: 0.75rem;
     }
 
-    .order-summary {
+    .order-summary,
+    .order-voucher-box {
       display: grid;
       gap: 0.45rem;
       padding: 0.9rem;
@@ -280,7 +304,8 @@ import { NotificationService } from '../../../core/services/notification.service
       border: 1px solid rgba(125, 211, 252, 0.28);
     }
 
-    .order-summary p {
+    .order-summary p,
+    .order-voucher-box span {
       margin: 0;
       color: #0f172a;
     }
@@ -319,7 +344,7 @@ import { NotificationService } from '../../../core/services/notification.service
       display: grid;
       justify-items: end;
       gap: 0.15rem;
-      min-width: 5.5rem;
+      min-width: 7rem;
     }
 
     .order-muted {
@@ -379,17 +404,15 @@ import { NotificationService } from '../../../core/services/notification.service
   `],
 })
 export class CheckoutPage {
-  private readonly cartApi = inject(CartApiService);
+  protected readonly APP_ROUTES = APP_ROUTES;
+  protected readonly cartStore = inject(CartStore);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
 
-  protected readonly loading = signal(false);
-  protected readonly errorMessage = signal('');
-  protected readonly cart = signal<Cart | null>(null);
-  protected readonly pricingDiscount = signal(0);
-  protected readonly pricingShippingFee = signal(0);
-  protected readonly pricingGrandTotal = signal(0);
+  protected readonly cart = this.cartStore.cart;
+  protected readonly pricingPreview = this.cartStore.pricingPreview;
+  protected readonly loading = computed(() => this.cartStore.isLoading() || this.cartStore.isCheckoutSubmitting());
 
   protected readonly form: CheckoutFromCartRequest = {
     recipientName: '',
@@ -411,91 +434,79 @@ export class CheckoutPage {
   }
 
   protected loadCartAndPricing(): void {
-    this.loading.set(true);
-    this.errorMessage.set('');
-
-    this.cartApi
-      .getMyCart()
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (cart) => {
-          this.cart.set(cart);
-          this.pricingDiscount.set(cart.discountAmount || 0);
-          this.pricingShippingFee.set(0);
-          this.pricingGrandTotal.set(cart.grandTotal || 0);
-          this.loadPricingPreview();
-        },
-        error: (error) => this.errorMessage.set(this.errorMapper.map(error).message),
-      });
-  }
-
-  private loadPricingPreview(): void {
-    this.cartApi.previewPricing().subscribe({
-      next: (preview) => {
-        this.pricingDiscount.set(preview.discountAmount || 0);
-        this.pricingShippingFee.set(preview.shippingFee || 0);
-        this.pricingGrandTotal.set(preview.grandTotal || 0);
+    this.cartStore.resetTransientErrors();
+    this.cartStore.refreshCartAndPricing().subscribe({
+      error: (error) => {
+        const mapped = this.errorMapper.map(error);
+        this.cartStore.setCheckoutError(mapped.message);
       },
-      error: () => undefined,
     });
   }
 
   protected checkout(): void {
-    if (!this.isCartCheckoutAllowed()) {
-      this.notifications.error('Gio hang hien tai co san pham khong du ton de checkout.');
+    if (!this.canSubmit()) {
+      this.notifications.error('Gio hang hien tai chua san sang de checkout.');
       return;
     }
 
     if (!this.form.recipientName.trim() || !this.form.recipientPhone.trim() || !this.form.addressLine1.trim()) {
-      this.notifications.error('Can nhap recipient name, recipient phone va address line 1.');
+      this.notifications.error('Can nhap ten nguoi nhan, so dien thoai va dia chi nhan hang.');
       return;
     }
-
-    this.loading.set(true);
-    this.errorMessage.set('');
 
     const request: CheckoutFromCartRequest = {
       recipientName: this.form.recipientName.trim(),
       recipientPhone: this.form.recipientPhone.trim(),
-      provinceCode: this.form.provinceCode.trim(),
-      districtCode: this.form.districtCode.trim(),
-      wardCode: this.form.wardCode.trim(),
+      provinceCode: this.normalizeOptional(this.form.provinceCode),
+      districtCode: this.normalizeOptional(this.form.districtCode),
+      wardCode: this.normalizeOptional(this.form.wardCode),
       addressLine1: this.form.addressLine1.trim(),
-      addressLine2: this.form.addressLine2?.trim() || null,
-      shippingMethodCode: this.form.shippingMethodCode.trim(),
-      shippingMethodName: this.form.shippingMethodName.trim(),
-      paymentMethodCode: this.form.paymentMethodCode.trim(),
-      paymentMethodName: this.form.paymentMethodName.trim(),
-      customerNote: this.form.customerNote?.trim() || null,
+      addressLine2: this.normalizeOptional(this.form.addressLine2),
+      shippingMethodCode: this.normalizeOptional(this.form.shippingMethodCode),
+      shippingMethodName: this.normalizeOptional(this.form.shippingMethodName),
+      paymentMethodCode: this.normalizeOptional(this.form.paymentMethodCode),
+      paymentMethodName: this.normalizeOptional(this.form.paymentMethodName),
+      customerNote: this.normalizeOptional(this.form.customerNote),
     };
 
-    this.cartApi
-      .checkout(request)
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (order) => {
-          this.notifications.success(`Dat hang thanh cong: ${order.orderNumber}`);
-          this.router.navigateByUrl(APP_ROUTES.myOrderDetail(order.id));
-        },
-        error: (error) => {
-          const mapped = this.errorMapper.map(error);
-          this.errorMessage.set(mapped.message);
-          this.notifications.error(mapped.message);
-          this.loadCartAndPricing();
-        },
-      });
+    this.cartStore.checkout(request).pipe(
+      finalize(() => this.loadCartAndPricing()),
+    ).subscribe({
+      next: (order) => {
+        this.notifications.success(`Dat hang thanh cong: ${order.orderNumber}`);
+        void this.router.navigateByUrl(APP_ROUTES.myOrderDetail(order.id));
+      },
+      error: (error) => {
+        const mapped = this.errorMapper.map(error);
+        this.cartStore.setCheckoutError(mapped.message);
+        this.notifications.error(mapped.message);
+      },
+    });
   }
 
-  protected isCartCheckoutAllowed(): boolean {
-    const cart = this.cart();
-    if (!cart) {
+  protected canSubmit(): boolean {
+    const currentCart = this.cart();
+    if (!currentCart || !currentCart.items.length) {
       return false;
     }
 
-    return cart.items.every((item) => (item.canCheckout ?? true) && item.quantity <= (item.availableQty ?? item.quantity));
+    return currentCart.items.every((item) => (item.canCheckout ?? true) && item.quantity <= (item.availableQty ?? item.quantity));
   }
 
   protected checkoutAvailabilityLabel(): string {
-    return this.isCartCheckoutAllowed() ? 'Co the checkout' : 'Can cap nhat lai ton kho';
+    return this.canSubmit() ? 'Co the checkout' : 'Can cap nhat lai ton kho';
+  }
+
+  protected formatCurrency(value: number | null | undefined, currencyCode: string | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+
+    return `${value.toLocaleString('vi-VN')} ${currencyCode || 'VND'}`;
+  }
+
+  private normalizeOptional(value: string | null | undefined): string | null {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
   }
 }

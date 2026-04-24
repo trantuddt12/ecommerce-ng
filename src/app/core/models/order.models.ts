@@ -142,14 +142,17 @@ export interface PagedResult<T> {
   size: number;
 }
 
+export type CartStatus = 'ACTIVE' | 'CHECKED_OUT' | 'ABANDONED';
+export type CartVoucherType = 'FIXED' | 'PERCENT' | null;
+
 export interface CartItem {
-  id: number;
+  id: number | null;
   productId: number;
   variantId: number;
-  productCode: string;
+  productCode: string | null;
   productName: string;
-  variantName: string;
-  variantAttributes: string;
+  variantName: string | null;
+  variantAttributes: string | null;
   sku: string;
   imageUrl: string | null;
   quantity: number;
@@ -166,9 +169,9 @@ export interface CartItem {
 export interface Cart {
   id: number;
   customerId: number | null;
-  status: string;
+  status: CartStatus | string;
   voucherCode: string | null;
-  voucherType: string | null;
+  voucherType: CartVoucherType | string;
   voucherValue: number | null;
   totalItems: number;
   subtotalAmount: number;
@@ -201,14 +204,14 @@ export interface CartApplyVoucherRequest {
 export interface CheckoutFromCartRequest {
   recipientName: string;
   recipientPhone: string;
-  provinceCode: string;
-  districtCode: string;
-  wardCode: string;
+  provinceCode?: string | null;
+  districtCode?: string | null;
+  wardCode?: string | null;
   addressLine1: string;
   addressLine2?: string | null;
-  shippingMethodCode: string;
-  shippingMethodName: string;
-  paymentMethodCode: string;
-  paymentMethodName: string;
+  shippingMethodCode?: string | null;
+  shippingMethodName?: string | null;
+  paymentMethodCode?: string | null;
+  paymentMethodName?: string | null;
   customerNote?: string | null;
 }
