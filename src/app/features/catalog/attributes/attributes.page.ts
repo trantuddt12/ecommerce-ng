@@ -10,7 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, tap } from 'rxjs';
 import {
   AttributeDefinition,
   AttributeDefinitionRequest,
@@ -461,7 +461,12 @@ export class AttributesPage {
     forkJoin({
       definitions: this.attributeApi.listDefinitions(),
       options: this.attributeApi.listOptions(),
-      categories: this.categoryApi.list(),
+      categories: this.categoryApi.list().pipe(
+        tap(res => {
+          console.log('categories raw : ', res);
+          console.log('categories length :' , res?.length);
+        })
+      ),
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({

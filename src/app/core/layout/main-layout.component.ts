@@ -38,13 +38,17 @@ import { SidebarComponent } from './sidebar.component';
   styles: [`
     .shell {
       min-height: 100vh;
-      background: #f8fafc;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.1), transparent 30rem),
+        linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%);
     }
 
     .shell-body {
       display: grid;
-      grid-template-columns: 17rem minmax(0, 1fr);
+      grid-template-columns: 16rem minmax(0, 1fr);
       gap: 1rem;
+      width: min(1440px, 100%);
+      margin: 0 auto;
       padding: 1rem;
       position: relative;
       align-items: start;
@@ -60,11 +64,12 @@ import { SidebarComponent } from './sidebar.component';
     .shell-content-inner {
       flex: 1;
       min-width: 0;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 1rem;
-      padding: 1.25rem;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 1.5rem;
+      padding: clamp(1rem, 2vw, 1.5rem);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(14px);
     }
 
     .shell-footer {
@@ -92,6 +97,7 @@ import { SidebarComponent } from './sidebar.component';
       }
 
       .shell-content-inner {
+        border-radius: 1.25rem;
         padding: 1rem;
       }
 
@@ -100,7 +106,7 @@ import { SidebarComponent } from './sidebar.component';
         position: fixed;
         inset: 0;
         border: 0;
-        background: rgba(15, 23, 42, 0.35);
+        background: rgba(15, 23, 42, 0.32);
         z-index: 25;
       }
     }
@@ -111,7 +117,7 @@ import { SidebarComponent } from './sidebar.component';
       }
 
       .shell-content-inner {
-        border-radius: 0.875rem;
+        border-radius: 1rem;
         padding: 0.875rem;
       }
 

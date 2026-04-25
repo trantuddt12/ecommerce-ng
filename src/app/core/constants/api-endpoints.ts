@@ -62,6 +62,7 @@ export const API_ENDPOINTS = {
   },
   product: {
     list: '/products',
+    storefront: '/products/storefront',
     create: '/products',
     byId: (id: string | number) => `/products/${id}`,
     update: (id: string | number) => `/products/${id}`,

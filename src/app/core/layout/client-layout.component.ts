@@ -290,8 +290,10 @@ export class ClientLayoutComponent {
       }
 
       if (!this.cartStore.cart()) {
-        this.cartStore.loadCart().subscribe({
-          error: () => undefined,
+        queueMicrotask(() => {
+          this.cartStore.loadCart().subscribe({
+            error: () => undefined,
+          });
         });
       }
     });

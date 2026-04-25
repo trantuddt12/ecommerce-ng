@@ -16,6 +16,12 @@ export class ProductApiService {
     );
   }
 
+  storefront(filters?: ProductFilter): Observable<AdminProductListItem[]> {
+    return this.baseApi.get<AdminProductListItem[] | ApiEnvelope<AdminProductListItem[]>>(API_ENDPOINTS.product.storefront, this.toQueryParams(filters)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
   getById(id: number): Observable<AdminProductDetail> {
     return this.baseApi.get<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.byId(id)).pipe(
       map((response) => unwrapApiEnvelope(response)),

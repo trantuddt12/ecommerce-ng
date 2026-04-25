@@ -5,10 +5,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { finalize, forkJoin } from 'rxjs';
+import { catchError, finalize, forkJoin, of, tap } from 'rxjs';
 import { APP_ROUTES } from '../../core/constants/app-routes';
 import { AppConfig } from '../../core/config/app-config.model';
-import { AdminProductListItem, Brand, Category } from '../../core/models/catalog.models';
+import { AdminProductListItem, Brand, Category, CategoryTreeNode } from '../../core/models/catalog.models';
 import { AuthStore } from '../../core/state/auth.store';
 import { APP_CONFIG } from '../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../core/utils/media-url.util';
@@ -50,29 +50,63 @@ interface HomePromoItem {
       </section>
 
       <section class="home-intro">
-        <aside class="home-categories" aria-label="Danh muc noi bat">
-          <div class="home-categories-header">
-            <h3>Danh muc quan tam</h3>
-            <p>Lay tu category active va visible de dieu huong nhanh ngay tren trang chu.</p>
+        <aside class="home-categories" aria-label="Danh muc san pham">
+          <div class="home-categories-title">
+            <span class="home-categories-title-icon">▦</span>
+            <h3>DANH MỤC SẢN PHẨM</h3>
           </div>
 
-          @if (featuredCategories().length) {
-            <div class="home-category-list">
-              @for (category of featuredCategories(); track category.id) {
-                <button
-                  class="home-category-card"
-                  type="button"
-                  [class.active]="selectedCategoryId() === category.id"
-                  (click)="toggleCategory(category.id)"
-                >
-                  <div class="home-category-icon">{{ categoryIcon(category.name) }}</div>
-                  <div>
-                    <strong>{{ category.name }}</strong>
-                    <span>{{ categoryDescription(category) }}</span>
-                  </div>
-                </button>
-              }
-            </div>
+          @if (categoryTree().length) {
+            <nav class="home-category-tree" aria-label="Chon danh muc san pham">
+              <ul class="home-category-menu">
+                @for (category of categoryTree(); track category.id) {
+                  <li class="home-category-menu-item" [class.active]="selectedCategoryId() === category.id">
+                    <button
+                      class="home-category-link"
+                      type="button"
+                      [class.active]="selectedCategoryId() === category.id"
+                      (click)="toggleCategory(category.id)"
+                    >
+                      <span class="home-category-icon-media">
+                        @if (resolveCategoryIconUrl(category); as iconUrl) {
+                          <img [src]="iconUrl" [alt]="category.name" />
+                        } @else {
+                          <span>{{ categoryIcon(category.name) }}</span>
+                        }
+                      </span>
+                      <span class="home-category-name">{{ category.name }}</span>
+                      @if (category.children.length) {
+                        <button
+                          class="home-category-toggle"
+                          type="button"
+                          [attr.aria-expanded]="isCategoryExpanded(category.id)"
+                          (click)="toggleCategoryExpansion(category.id, $event)"
+                        >
+                          ›
+                        </button>
+                      }
+                    </button>
+
+                    @if (category.children.length) {
+                      <ul class="home-category-submenu" [class.expanded]="isCategoryExpanded(category.id)">
+                        @for (child of visibleCategoryChildren(category); track child.id) {
+                          <li>
+                            <button
+                              class="home-subcategory-link"
+                              type="button"
+                              [class.active]="selectedCategoryId() === child.id"
+                              (click)="toggleCategory(child.id)"
+                            >
+                              {{ child.name }}
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </li>
+                }
+              </ul>
+            </nav>
           } @else if (!loading()) {
             <div class="home-empty home-empty-compact">
               <p>Chua co category noi bat.</p>
@@ -120,7 +154,7 @@ interface HomePromoItem {
         </section>
       </section>
 
-      @if (loading() && !products().length && !featuredCategories().length && !brands().length) {
+      @if (loading() && !products().length && !categoryTree().length && !brands().length) {
         <mat-progress-bar mode="indeterminate"></mat-progress-bar>
       }
 
@@ -183,7 +217,7 @@ interface HomePromoItem {
             <span class="home-filter-label">Category</span>
             <div class="home-filter-chips">
               <button class="home-filter-chip" type="button" [class.active]="selectedCategoryId() === null" (click)="selectedCategoryId.set(null)">Tat ca</button>
-              @for (category of featuredCategories(); track category.id) {
+              @for (category of flatVisibleCategories(); track category.id) {
                 <button class="home-filter-chip" type="button" [class.active]="selectedCategoryId() === category.id" (click)="toggleCategory(category.id)">
                   {{ category.name }}
                 </button>
@@ -314,6 +348,7 @@ export class PublicProductsPage implements OnInit {
   protected readonly authStore = inject(AuthStore);
   protected readonly products = signal<AdminProductListItem[]>([]);
   protected readonly categories = signal<Category[]>([]);
+  protected readonly categoryTree = signal<CategoryTreeNode[]>([]);
   protected readonly brands = signal<Brand[]>([]);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -321,14 +356,26 @@ export class PublicProductsPage implements OnInit {
   protected readonly purchasableCount = signal(0);
   protected readonly selectedCategoryId = signal<number | null>(null);
   protected readonly selectedBrandId = signal<number | null>(null);
+  protected readonly expandedCategoryIds = signal<Set<number>>(new Set());
   protected readonly filteredProducts = computed(() => this.products().filter((product) => {
-    const matchesCategory = this.selectedCategoryId() === null || product.categoryId === this.selectedCategoryId();
+    const selectedCategoryIds = this.selectedCategoryScopeIds();
+    const matchesCategory = this.selectedCategoryId() === null || selectedCategoryIds.has(product.categoryId);
     const matchesBrand = this.selectedBrandId() === null || product.brandId === this.selectedBrandId();
     return matchesCategory && matchesBrand;
   }));
   protected readonly flashDeals = computed(() => this.filteredProducts().slice(0, 4));
   protected readonly featuredProducts = computed(() => this.filteredProducts().slice(0, 10));
-  protected readonly featuredCategories = computed(() => this.categories().slice(0, 8));
+  protected readonly categoryById = computed(() => new Map(this.categories().map((category) => [category.id, category])));
+  protected readonly flatVisibleCategories = computed(() => this.flattenCategoryTree(this.categoryTree()).slice(0, 16));
+  protected readonly selectedCategoryScopeIds = computed(() => {
+    const selectedId = this.selectedCategoryId();
+    if (selectedId === null) {
+      return new Set<number>();
+    }
+
+    const selectedNode = this.findCategoryNode(this.categoryTree(), selectedId);
+    return new Set([selectedId, ...this.flattenCategoryTree(selectedNode?.children ?? []).map((category) => category.id)]);
+  });
   protected readonly promos: HomePromoItem[] = [
     { title: 'Tuan le gia dung', description: 'Giam sau cho may xay, noi com va thiet bi nha bep.' },
     { title: 'Laptop hoc tap', description: 'Nhom san pham gia tot cho hoc sinh, sinh vien va van phong.' },
@@ -360,17 +407,36 @@ export class PublicProductsPage implements OnInit {
     this.errorMessage.set(null);
 
     forkJoin({
-      products: this.productApi.list({ status: 'ACTIVE' }),
-      categories: this.categoryApi.list({ status: 'ACTIVE', visible: true }),
-      brands: this.brandApi.list(),
+      products: this.productApi.storefront().pipe(
+        catchError(() => of([] as AdminProductListItem[])),
+      ),
+      categories: this.categoryApi.list({ status: 'ACTIVE', visible: true }).pipe(
+        tap(res => {
+          console.log('categories raw : ' , res);
+        }),
+        catchError(() => of([] as Category[])),
+      ),
+      categoryTree: this.categoryApi.tree({ status: 'ACTIVE', visibleOnly: true }).pipe(
+        catchError(() => of([] as CategoryTreeNode[])),
+      ),
+      brands: this.brandApi.list().pipe(
+        catchError(() => of([] as Brand[])),
+      ),
     }).pipe(
       finalize(() => this.loading.set(false)),
     ).subscribe({
-      next: ({ products, categories, brands }) => {
+      next: ({ products, categories, categoryTree, brands }) => {
         const visibleProducts = products.filter((product) => product.visibility !== 'HIDDEN');
+        const visibleCategories = this.normalizeVisibleCategories(categories);
+        const normalizedTree = this.normalizeCategoryTree(categoryTree);
+        const fallbackTree = normalizedTree.length ? normalizedTree : this.buildCategoryTreeFromList(visibleCategories);
+        const visibleBrands = brands.filter((brand) => !brand.generic);
+
         this.products.set(visibleProducts);
-        this.categories.set(categories.filter((category) => category.visible && category.status === 'ACTIVE'));
-        this.brands.set(brands.filter((brand) => !brand.generic).slice(0, 10));
+        this.categories.set(visibleCategories);
+        this.categoryTree.set(fallbackTree);
+        this.expandedCategoryIds.set(new Set(fallbackTree.slice(0, 1).map((category) => category.id)));
+        this.brands.set(visibleBrands.slice(0, 10));
         this.purchasableCount.set(visibleProducts.filter((product) => this.isPurchasable(product)).length);
       },
       error: (error) => {
@@ -474,8 +540,107 @@ export class PublicProductsPage implements OnInit {
     return `${value.toLocaleString('vi-VN')} VND`;
   }
 
-  categoryDescription(category: Category): string {
-    return category.description || category.parentName || 'Danh muc dang co uu dai tot';
+  categoryDescription(category: CategoryTreeNode): string {
+    const detail = this.categoryById().get(category.id);
+    return detail?.description || detail?.parentName || 'Danh muc dang co uu dai tot';
+  }
+
+  visibleCategoryChildren(category: CategoryTreeNode): CategoryTreeNode[] {
+    return category.children.filter((child) => child.visible !== false && child.status === 'ACTIVE');
+  }
+
+  isCategoryExpanded(categoryId: number): boolean {
+    return this.expandedCategoryIds().has(categoryId);
+  }
+
+  toggleCategoryExpansion(categoryId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    const next = new Set(this.expandedCategoryIds());
+
+    if (next.has(categoryId)) {
+      next.delete(categoryId);
+    } else {
+      next.add(categoryId);
+    }
+
+    this.expandedCategoryIds.set(next);
+  }
+
+  resolveCategoryIconUrl(category: CategoryTreeNode): string | null {
+    const detail = this.categoryById().get(category.id);
+    return resolveMediaUrl(detail?.iconUrl || detail?.imageUrl || detail?.galleryImages?.[0]?.url || null, this.config.apiBaseUrl);
+  }
+
+  normalizeVisibleCategories(categories: Category[]): Category[] {
+    return categories.filter((category) => category.status === 'ACTIVE' && category.visible !== false);
+  }
+
+  normalizeCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+    return nodes
+      .filter((node) => node.status === 'ACTIVE' && node.visible !== false)
+      .slice()
+      .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name))
+      .map((node) => ({
+        ...node,
+        visible: node.visible !== false,
+        children: this.normalizeCategoryTree(node.children ?? []),
+      }));
+  }
+
+  buildCategoryTreeFromList(categories: Category[]): CategoryTreeNode[] {
+    const mapped = new Map<number, CategoryTreeNode>();
+    const roots: CategoryTreeNode[] = [];
+
+    for (const category of categories) {
+      mapped.set(category.id, {
+        id: category.id,
+        code: category.code,
+        name: category.name,
+        slug: category.slug,
+        level: category.level,
+        path: category.path,
+        status: category.status,
+        visible: category.visible,
+        assignable: category.assignable,
+        sortOrder: category.sortOrder,
+        children: [],
+      });
+    }
+
+    for (const category of categories) {
+      const node = mapped.get(category.id);
+      if (!node) {
+        continue;
+      }
+
+      const parentNode = category.parentId === null ? null : mapped.get(category.parentId);
+      if (parentNode) {
+        parentNode.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+
+    return this.normalizeCategoryTree(roots);
+  }
+
+  flattenCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+    return nodes.flatMap((node) => [node, ...this.flattenCategoryTree(node.children)]);
+  }
+
+  findCategoryNode(nodes: CategoryTreeNode[], categoryId: number): CategoryTreeNode | null {
+    for (const node of nodes) {
+      if (node.id === categoryId) {
+        return node;
+      }
+
+      const child = this.findCategoryNode(node.children, categoryId);
+      if (child) {
+        return child;
+      }
+    }
+
+    return null;
   }
 
   categoryIcon(categoryName: string): string {
