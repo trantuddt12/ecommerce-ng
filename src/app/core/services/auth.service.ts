@@ -93,13 +93,14 @@ export class AuthService {
   }
 
   logout() {
-    return this.api.post<void>(API_ENDPOINTS.auth.logout, {}).pipe(
+    return this.api.postText(API_ENDPOINTS.auth.logout, {}).pipe(
       catchError((error) => {
         if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
           return of(void 0);
         }
         return of(void 0);
       }),
+      map(() => void 0),
       tap(() => this.sessionService.clearSession()),
     );
   }
