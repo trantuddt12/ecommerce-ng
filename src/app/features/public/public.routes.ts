@@ -8,9 +8,9 @@ export const publicRoutes: Routes = [
     path: '',
     component: ClientLayoutComponent,
     children: [
-      { path: 'products', component: PublicProductsPage },
+      { path: '', component: PublicProductsPage },
+      { path: 'products', pathMatch: 'full', redirectTo: '' },
       { path: 'dashboard', component: DashboardPage },
-      { path: '', pathMatch: 'full', redirectTo: 'products' },
     ],
   },
 ];

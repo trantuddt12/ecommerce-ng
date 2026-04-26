@@ -37,6 +37,9 @@ export interface CategoryAttribute {
   filterable: boolean;
   specification: boolean;
   sortOrder: number | null;
+  inherited?: boolean;
+  sourceCategoryId?: number | null;
+  sourceCategoryName?: string | null;
 }
 
 export interface Category {

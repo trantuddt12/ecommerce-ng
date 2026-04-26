@@ -6,6 +6,8 @@ import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
 import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, ProductFilter, ProductImage } from '../models/catalog.models';
 import { QueryParamValue } from '../utils/query-params.util';
 
+export type ProductStatusValue = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+
 @Injectable({ providedIn: 'root' })
 export class ProductApiService {
   private readonly baseApi = inject(BaseApiService);
@@ -37,6 +39,12 @@ export class ProductApiService {
 
   update(id: number, request: AdminProductUpsertRequest): Observable<AdminProductDetail> {
     return this.baseApi.patch<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.update(id), request).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  updateStatus(id: number, status: ProductStatusValue): Observable<AdminProductDetail> {
+    return this.baseApi.patch<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.status(id), { status }).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
   }

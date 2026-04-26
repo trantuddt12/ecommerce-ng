@@ -6,11 +6,12 @@ import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { finalize, forkJoin, tap } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import {
   AttributeDefinition,
   AttributeDefinitionRequest,
@@ -37,6 +38,7 @@ import { NotificationService } from '../../../core/services/notification.service
     MatCheckboxModule,
     MatChipsModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressBarModule,
     MatSelectModule,
@@ -44,37 +46,57 @@ import { NotificationService } from '../../../core/services/notification.service
   ],
   template: `
     <section class="catalog-page">
-      <mat-card class="catalog-hero">
+      <mat-card class="catalog-hero attributes-hero">
         <mat-card-content>
-          <p class="catalog-eyebrow">Catalog Schema</p>
-          <h2>Attribute CRUD hub</h2>
-          <p>Quan ly attribute definition, predefined option va category mapping trong cung mot flow de product dung dung schema.</p>
+          <div class="attributes-hero-grid">
+            <div>
+              <p class="catalog-eyebrow">Catalog Schema</p>
+              <h2>Attribute CRUD hub</h2>
+              <p>Quan ly attribute definition, predefined option va category mapping trong cung mot flow de product dung dung schema.</p>
+            </div>
+
+            <div class="attributes-hero-actions">
+              <button mat-flat-button color="primary" type="button" (click)="loadData()" [disabled]="loading()">
+                <mat-icon aria-hidden="true">sync</mat-icon>
+                Tai lai schema
+              </button>
+            </div>
+          </div>
         </mat-card-content>
       </mat-card>
 
       <section class="catalog-stats">
-        <mat-card class="catalog-stat-card">
+        <mat-card class="catalog-stat-card attributes-stat-card attributes-stat-primary">
           <mat-card-content>
-            <p class="catalog-stat-label">Attributes</p>
-            <p class="catalog-stat-value">{{ attributeDefinitions().length }}</p>
+            <div class="attributes-stat-icon"><mat-icon aria-hidden="true">schema</mat-icon></div>
+            <div>
+              <p class="catalog-stat-label">Attributes</p>
+              <p class="catalog-stat-value">{{ attributeDefinitions().length }}</p>
+            </div>
           </mat-card-content>
         </mat-card>
-        <mat-card class="catalog-stat-card">
+        <mat-card class="catalog-stat-card attributes-stat-card attributes-stat-secondary">
           <mat-card-content>
-            <p class="catalog-stat-label">Options</p>
-            <p class="catalog-stat-value">{{ attributeOptions().length }}</p>
+            <div class="attributes-stat-icon"><mat-icon aria-hidden="true">tune</mat-icon></div>
+            <div>
+              <p class="catalog-stat-label">Options</p>
+              <p class="catalog-stat-value">{{ attributeOptions().length }}</p>
+            </div>
           </mat-card-content>
         </mat-card>
-        <mat-card class="catalog-stat-card">
+        <mat-card class="catalog-stat-card attributes-stat-card attributes-stat-success">
           <mat-card-content>
-            <p class="catalog-stat-label">Mappings</p>
-            <p class="catalog-stat-value">{{ categoryAttributes().length }}</p>
+            <div class="attributes-stat-icon"><mat-icon aria-hidden="true">account_tree</mat-icon></div>
+            <div>
+              <p class="catalog-stat-label">Mappings</p>
+              <p class="catalog-stat-value">{{ categoryAttributes().length }}</p>
+            </div>
           </mat-card-content>
         </mat-card>
       </section>
 
       <section class="catalog-grid">
-        <mat-card class="catalog-panel catalog-span-4">
+        <mat-card class="catalog-panel attributes-panel catalog-span-4">
           <mat-card-content>
             @if (loading()) {
               <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
@@ -146,7 +168,7 @@ import { NotificationService } from '../../../core/services/notification.service
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="catalog-panel catalog-span-8">
+        <mat-card class="catalog-panel attributes-panel catalog-span-8">
           <mat-card-content>
             <div class="catalog-panel-header">
               <div>
@@ -206,7 +228,7 @@ import { NotificationService } from '../../../core/services/notification.service
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="catalog-panel catalog-span-6">
+        <mat-card class="catalog-panel attributes-panel catalog-span-6">
           <mat-card-content>
             <div class="catalog-panel-header">
               <div>
@@ -293,7 +315,7 @@ import { NotificationService } from '../../../core/services/notification.service
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="catalog-panel catalog-span-6">
+        <mat-card class="catalog-panel attributes-panel attributes-mapping-panel catalog-span-6">
           <mat-card-content>
             <div class="catalog-panel-header">
               <div>
@@ -302,13 +324,68 @@ import { NotificationService } from '../../../core/services/notification.service
               </div>
             </div>
 
+            <div class="category-search-hero">
+              <div class="category-search-hero-copy">
+                <div class="category-search-hero-title">
+                  <mat-icon aria-hidden="true">manage_search</mat-icon>
+                  <span>Search category</span>
+                </div>
+                <p>Tim nhanh category theo ten, code, slug, path hoac category cha de tao mapping chinh xac hon.</p>
+              </div>
+
+              <mat-form-field appearance="outline" class="category-search-field">
+                <mat-label>Tim category cho mapping</mat-label>
+                <mat-icon matPrefix>search</mat-icon>
+                <input
+                  matInput
+                  type="search"
+                  [(ngModel)]="categorySearchTerm"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="VD: dien thoai, phu kien, apple"
+                />
+                @if (categorySearchTerm) {
+                  <button mat-icon-button matSuffix type="button" aria-label="Xoa search category" (click)="clearCategorySearch()">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </mat-form-field>
+
+              <div class="category-search-meta">
+                <span>
+                  <mat-icon aria-hidden="true">folder_open</mat-icon>
+                  {{ filteredCategoryOptions().length }} / {{ categories().length }} category phu hop
+                </span>
+                @if (selectedCategory(); as activeCategory) {
+                  <span>
+                    <mat-icon aria-hidden="true">target</mat-icon>
+                    Dang chon: {{ renderCategoryOption(activeCategory) }}
+                  </span>
+                } @else {
+                  <span>
+                    <mat-icon aria-hidden="true">info</mat-icon>
+                    Chua chon category de mapping.
+                  </span>
+                }
+                @if (categorySearchTerm && !filteredCategoryOptions().length) {
+                  <span>
+                    <mat-icon aria-hidden="true">tips_and_updates</mat-icon>
+                    Thu tim bang ten cha, slug hoac code category.
+                  </span>
+                }
+              </div>
+            </div>
+
             <div class="catalog-form-grid">
               <mat-form-field appearance="outline">
                 <mat-label>Category</mat-label>
                 <mat-select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
                   <mat-option [value]="null">Chon category</mat-option>
-                  @for (category of categories(); track category.id) {
-                    <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                  @for (category of filteredCategoryOptions(); track category.id) {
+                    <mat-option [value]="category.id">
+                      <span class="category-option-label">{{ renderCategoryOption(category) }}</span>
+                    </mat-option>
+                  } @empty {
+                    <mat-option disabled>Khong co category phu hop</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
@@ -343,11 +420,40 @@ import { NotificationService } from '../../../core/services/notification.service
               <button mat-stroked-button type="button" (click)="resetMappingForm()" [disabled]="loading()">Reset</button>
             </div>
 
+            @if (selectedCategory(); as activeCategory) {
+              <div class="catalog-mapping-summary">
+                <span>
+                  <mat-icon aria-hidden="true">folder_open</mat-icon>
+                  Dang xem: {{ renderCategoryOption(activeCategory) }}
+                </span>
+                @if (activeCategory.parentId) {
+                  <span>
+                    <mat-icon aria-hidden="true">call_merge</mat-icon>
+                    Category con se tu dong ke thua attribute tu category cha neu chua override rieng.
+                  </span>
+                }
+              </div>
+            }
+
             @if (categoryAttributes().length) {
               <table mat-table [dataSource]="categoryAttributes()" class="catalog-table">
                 <ng-container matColumnDef="attribute">
                   <th mat-header-cell *matHeaderCellDef>Attribute</th>
-                  <td mat-cell *matCellDef="let item">{{ resolveAttributeName(item.attributeId) }}</td>
+                  <td mat-cell *matCellDef="let item">
+                    <div>
+                      <strong>{{ resolveAttributeName(item.attributeId) }}</strong>
+                      <div class="catalog-inline-meta">
+                        @if (item.inherited) {
+                          <mat-chip class="catalog-chip-soft">Ke thua</mat-chip>
+                        } @else {
+                          <mat-chip class="catalog-chip-success">Truc tiep</mat-chip>
+                        }
+                        @if (item.sourceCategoryName) {
+                          <mat-chip class="catalog-chip-neutral">{{ item.inherited ? 'Tu' : 'Tai' }} {{ item.sourceCategoryName }}</mat-chip>
+                        }
+                      </div>
+                    </div>
+                  </td>
                 </ng-container>
 
                 <ng-container matColumnDef="flags">
@@ -373,10 +479,14 @@ import { NotificationService } from '../../../core/services/notification.service
                 <ng-container matColumnDef="actions">
                   <th mat-header-cell *matHeaderCellDef>Actions</th>
                   <td mat-cell *matCellDef="let item">
-                    <div class="catalog-actions catalog-actions-inline">
-                      <button mat-stroked-button type="button" (click)="editCategoryMapping(item)">Sua</button>
-                      <button mat-stroked-button type="button" color="warn" (click)="deleteCategoryMapping(item)">Xoa</button>
-                    </div>
+                    @if (item.inherited) {
+                      <div class="catalog-inline-meta">Tao mapping moi de override.</div>
+                    } @else {
+                      <div class="catalog-actions catalog-actions-inline">
+                        <button mat-stroked-button type="button" (click)="editCategoryMapping(item)">Sua</button>
+                        <button mat-stroked-button type="button" color="warn" (click)="deleteCategoryMapping(item)">Xoa</button>
+                      </div>
+                    }
                   </td>
                 </ng-container>
 
@@ -395,6 +505,80 @@ import { NotificationService } from '../../../core/services/notification.service
   `,
   styles: [
     `
+      .attributes-hero {
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 28px 62px rgba(15, 23, 42, 0.2);
+        animation: attributesPanelEnter 260ms ease-out;
+      }
+
+      .attributes-hero::after {
+        content: '';
+        position: absolute;
+        inset: auto -5rem -7rem auto;
+        width: 18rem;
+        height: 18rem;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(96, 165, 250, 0.45), rgba(96, 165, 250, 0));
+        pointer-events: none;
+      }
+
+      .attributes-hero-grid {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1.25rem;
+      }
+
+      .attributes-hero-actions button {
+        color: #1d4ed8;
+        background: #ffffff;
+      }
+
+      .attributes-hero-actions mat-icon {
+        margin-right: 0.35rem;
+      }
+
+      .attributes-stat-card {
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .attributes-stat-card .mat-mdc-card-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .attributes-stat-icon {
+        display: grid;
+        place-items: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 1rem;
+        color: #1d4ed8;
+        background: rgba(219, 234, 254, 0.9);
+      }
+
+      .attributes-stat-primary { background: linear-gradient(145deg, #ffffff, #eff6ff); }
+      .attributes-stat-secondary { background: linear-gradient(145deg, #ffffff, #f5f3ff); }
+      .attributes-stat-success { background: linear-gradient(145deg, #ffffff, #ecfdf5); }
+
+      .attributes-panel {
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.09);
+        animation: attributesPanelEnter 260ms ease-out;
+      }
+
+      .attributes-panel:nth-child(odd) {
+        animation-delay: 40ms;
+      }
+
+      .attributes-mapping-panel {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.76));
+      }
+
       .catalog-span-6 {
         grid-column: span 6;
       }
@@ -411,7 +595,101 @@ import { NotificationService } from '../../../core/services/notification.service
         flex-wrap: wrap;
       }
 
+      .catalog-mapping-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        color: rgba(15, 23, 42, 0.72);
+        font-size: 0.92rem;
+      }
+
+      .category-search-hero {
+        display: grid;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 1.15rem;
+        border: 1px solid rgba(96, 165, 250, 0.18);
+        background: linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.96));
+        box-shadow: 0 16px 34px rgba(37, 99, 235, 0.08);
+      }
+
+      .category-search-hero-copy {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .category-search-hero-copy p {
+        margin: 0;
+        color: rgba(15, 23, 42, 0.68);
+        font-size: 0.92rem;
+      }
+
+      .category-search-hero-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .category-search-hero-title mat-icon {
+        color: #2563eb;
+      }
+
+      .category-search-field {
+        margin-bottom: -0.25rem;
+      }
+
+      .category-search-meta,
+      .category-option-label {
+        color: rgba(15, 23, 42, 0.68);
+        font-size: 0.88rem;
+      }
+
+      .category-search-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .category-search-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
+      }
+
+      .catalog-mapping-summary span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(239, 246, 255, 0.9);
+      }
+
+      .catalog-mapping-summary mat-icon {
+        width: 1rem;
+        height: 1rem;
+        font-size: 1rem;
+        color: #2563eb;
+      }
+
       @media (max-width: 1024px) {
+        .attributes-hero-grid {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .attributes-hero-actions button {
+          width: 100%;
+        }
+
         .catalog-span-4,
         .catalog-span-6,
         .catalog-span-8 {
@@ -422,6 +700,10 @@ import { NotificationService } from '../../../core/services/notification.service
       @media (max-width: 720px) {
         .catalog-form-grid {
           grid-template-columns: 1fr;
+        }
+
+        .category-search-meta {
+          display: grid;
         }
       }
     `,
@@ -446,6 +728,7 @@ export class AttributesPage {
   protected readonly optionColumns = ['value', 'status', 'actions'];
   protected readonly mappingColumns = ['attribute', 'flags', 'actions'];
   protected selectedCategoryId: number | null = null;
+  protected categorySearchTerm = '';
 
   protected readonly attributeForm = createDefaultAttributeForm();
   protected readonly optionForm = createDefaultOptionForm();
@@ -461,12 +744,7 @@ export class AttributesPage {
     forkJoin({
       definitions: this.attributeApi.listDefinitions(),
       options: this.attributeApi.listOptions(),
-      categories: this.categoryApi.list().pipe(
-        tap(res => {
-          console.log('categories raw : ', res);
-          console.log('categories length :' , res?.length);
-        })
-      ),
+      categories: this.categoryApi.list({ page: 0, size: 1000, sortBy: 'name', sortDir: 'asc' }),
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -500,7 +778,7 @@ export class AttributesPage {
     }
 
     this.loading.set(true);
-    this.categoryAttributeApi.list(this.selectedCategoryId)
+    this.categoryAttributeApi.list(this.selectedCategoryId, true)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (items) => this.categoryAttributes.set(items),
@@ -511,6 +789,10 @@ export class AttributesPage {
   protected onCategoryChange(): void {
     this.resetMappingForm();
     this.loadCategoryAttributes();
+  }
+
+  protected clearCategorySearch(): void {
+    this.categorySearchTerm = '';
   }
 
   protected saveAttributeDefinition(): void {
@@ -646,7 +928,11 @@ export class AttributesPage {
   }
 
   protected editCategoryMapping(mapping: CategoryAttribute): void {
-    this.mappingForm.id = mapping.id;
+    if (mapping.inherited) {
+      this.notifications.info('Attribute dang ke thua tu category cha. Luu form se tao override cho category hien tai.');
+    }
+
+    this.mappingForm.id = mapping.inherited ? null : mapping.id;
     this.mappingForm.attributeId = mapping.attributeId;
     this.mappingForm.required = mapping.required;
     this.mappingForm.variantAxis = mapping.variantAxis;
@@ -680,6 +966,33 @@ export class AttributesPage {
     return this.attributeDefinitions().filter((attribute) => isOptionBasedAttribute(attribute));
   }
 
+  protected filteredCategoryOptions(): Category[] {
+    const normalizedTerm = normalizeText(this.categorySearchTerm);
+    if (!normalizedTerm) {
+      return this.sortedCategories();
+    }
+
+    return this.sortedCategories().filter((category) => {
+      const haystack = normalizeText([
+        category.name,
+        category.code,
+        category.slug,
+        category.path,
+        category.parentName,
+        this.resolveParentName(category.parentId),
+      ].filter(Boolean).join(' '));
+      return haystack.includes(normalizedTerm);
+    });
+  }
+
+  protected selectedCategory(): Category | undefined {
+    return this.categories().find((category) => category.id === this.selectedCategoryId);
+  }
+
+  protected renderCategoryOption(category: Category): string {
+    return category.path || this.buildCategoryLabel(category);
+  }
+
   protected filteredOptions(): AttributeValue[] {
     const attributeId = this.optionForm.attributeId ?? this.selectedOptionAttributeId();
     if (!attributeId) {
@@ -695,6 +1008,14 @@ export class AttributesPage {
 
   protected resolveAttributeName(attributeId: number): string {
     return this.attributeDefinitions().find((item) => item.id === attributeId)?.name ?? `#${attributeId}`;
+  }
+
+  protected resolveParentName(parentId: number | null | undefined): string {
+    if (!parentId) {
+      return '';
+    }
+
+    return this.categories().find((item) => item.id === parentId)?.name ?? '';
   }
 
   protected renderFlags(attribute: AttributeDefinition): string {
@@ -717,6 +1038,15 @@ export class AttributesPage {
 
   protected resetMappingForm(): void {
     Object.assign(this.mappingForm, createDefaultMappingForm());
+  }
+
+  private sortedCategories(): Category[] {
+    return [...this.categories()].sort((first, second) => this.renderCategoryOption(first).localeCompare(this.renderCategoryOption(second), 'vi'));
+  }
+
+  private buildCategoryLabel(category: Category): string {
+    const parentName = category.parentName ?? this.resolveParentName(category.parentId);
+    return parentName ? `${parentName} / ${category.name}` : category.name;
   }
 
   private buildAttributeRequest(): AttributeDefinitionRequest | null {
@@ -854,6 +1184,10 @@ function createDefaultMappingForm() {
 
 function isOptionBasedAttribute(attribute: AttributeDefinition): boolean {
   return isOptionBasedValueType(attribute.valueType);
+}
+
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? '').trim().toLocaleLowerCase('vi');
 }
 
 function isOptionBasedValueType(valueType: string | null | undefined): boolean {

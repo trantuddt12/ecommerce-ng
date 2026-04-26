@@ -1,32 +1,38 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { APP_ROUTES } from '../constants/app-routes';
+import { ADMIN_NAVIGATION_SECTIONS } from './admin-navigation.data';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { AuthStore } from '../state/auth.store';
 import { hasAnyPermission } from '../utils/permission.util';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, TranslatePipe],
   template: `
     <aside id="app-sidebar" class="sidebar" [class.open]="isOpen()">
       <div class="sidebar-header">
         <div>
-          <p class="sidebar-eyebrow">Dieu huong</p>
-          <strong>Quan tri</strong>
+          <p class="sidebar-eyebrow">{{ 'admin.navigation' | appTranslate }}</p>
+          <strong>{{ 'admin.area' | appTranslate }}</strong>
         </div>
 
-        <button type="button" class="close-button" (click)="navigate.emit()" aria-label="Dong menu">
+        <button type="button" class="close-button" (click)="navigate.emit()" [attr.aria-label]="'common.closeNavigation' | appTranslate">
           ×
         </button>
       </div>
 
       <nav class="sidebar-nav" aria-label="Admin navigation">
-        @for (item of menuItems; track item.path) {
-          @if (!item.permissions || canAccess(item.permissions)) {
-            <a [routerLink]="item.path" routerLinkActive="active" (click)="navigate.emit()">{{ item.label }}</a>
-          }
+        @for (section of visibleSections(); track section.labelKey) {
+          <section class="sidebar-section">
+            <p class="sidebar-section-title">{{ section.labelKey | appTranslate }}</p>
+            <div class="sidebar-link-list">
+              @for (item of section.items; track item.path) {
+                <a [routerLink]="item.path" routerLinkActive="active" (click)="navigate.emit()">{{ item.labelKey | appTranslate }}</a>
+              }
+            </div>
+          </section>
         }
       </nav>
     </aside>
@@ -66,6 +72,25 @@ import { hasAnyPermission } from '../utils/permission.util';
     }
 
     .sidebar-nav {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .sidebar-section {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .sidebar-section-title {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .sidebar-link-list {
       display: grid;
       gap: 0.35rem;
     }
@@ -128,35 +153,14 @@ export class SidebarComponent {
   readonly navigate = output<void>();
   private readonly authStore = inject(AuthStore);
 
-  protected readonly menuItems = [
-    { label: 'Dashboard', path: APP_ROUTES.dashboard },
-    { label: 'Users', path: APP_ROUTES.users, permissions: ['USER_VIEW'] },
-    { label: 'Roles', path: APP_ROUTES.roles, permissions: ['ROLE_MANAGE', 'ROLE_VIEW'] },
-    { label: 'Brands', path: APP_ROUTES.brands, permissions: ['BRAND_MANAGE', 'BRAND_VIEW'] },
-    { label: 'Categories', path: APP_ROUTES.categories, permissions: ['CATEGORY_MANAGE', 'CATEGORY_VIEW'] },
-    { label: 'Products', path: APP_ROUTES.products, permissions: ['PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE', 'PRODUCT_DELETE', 'PRODUCT_PUBLISH'] },
-    { label: 'Inventory', path: APP_ROUTES.inventory, permissions: ['INVENTORY_MANAGE', 'INVENTORY_VIEW'] },
-    { label: 'Attributes', path: APP_ROUTES.attributes, permissions: ['ATTRIBUTE_MANAGE', 'ATTRIBUTE_VIEW'] },
-    { label: 'Admin Orders', path: APP_ROUTES.adminOrders, permissions: ['ORDER_VIEW'] },
-    {
-      label: 'Operations',
-      path: APP_ROUTES.operations,
-      permissions: [
-        'BRAND_VIEW',
-        'BRAND_MANAGE',
-        'CATEGORY_VIEW',
-        'CATEGORY_MANAGE',
-        'PRODUCT_VIEW',
-        'PRODUCT_CREATE',
-        'PRODUCT_UPDATE',
-        'ATTRIBUTE_VIEW',
-        'ATTRIBUTE_MANAGE',
-      ],
-    },
-    { label: 'Search', path: APP_ROUTES.search, permissions: ['BRAND_VIEW'] },
-  ];
+  protected readonly visibleSections = computed(() => ADMIN_NAVIGATION_SECTIONS
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.permissions || this.canAccess(item.permissions)),
+    }))
+    .filter((section) => section.items.length > 0));
 
-  protected canAccess(requiredPermissions: string[]): boolean {
-    return hasAnyPermission(this.authStore.permissions(), requiredPermissions);
+  protected canAccess(requiredPermissions: readonly string[]): boolean {
+    return hasAnyPermission(this.authStore.permissions(), [...requiredPermissions]);
   }
 }

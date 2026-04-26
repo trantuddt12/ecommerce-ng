@@ -83,16 +83,16 @@ import { resolveMediaUrl } from '../../../core/utils/media-url.util';
                     <article class="cart-item-card">
                       <div class="cart-item-media">
                         @if (resolveItemImageUrl(item); as imageUrl) {
-                          <img [src]="imageUrl" [alt]="item.productName" />
+                          <img [src]="imageUrl" [alt]="itemDisplayName(item)" />
                         } @else {
-                          <div class="cart-item-placeholder">{{ item.productName.charAt(0) }}</div>
+                          <div class="cart-item-placeholder">{{ itemInitial(item) }}</div>
                         }
                       </div>
 
                       <div class="cart-item-main">
                         <div class="cart-item-copy">
                           <div>
-                            <h4>{{ item.productName }}</h4>
+                            <h4>{{ itemDisplayName(item) }}</h4>
                             <p>{{ item.variantName || item.sku }}</p>
                             @if (item.variantAttributes) {
                               <p>{{ item.variantAttributes }}</p>
@@ -595,7 +595,7 @@ export class CartPage {
       finalize(() => this.cartStore.loadPricingPreview().subscribe({ error: () => undefined })),
     ).subscribe({
       next: () => {
-        this.notificationService.success(`Da xoa ${item.productName} khoi gio hang.`);
+        this.notificationService.success(`Da xoa ${this.itemDisplayName(item)} khoi gio hang.`);
       },
       error: (error) => {
         const mapped = this.errorMapper.map(error);
@@ -703,6 +703,14 @@ export class CartPage {
     return resolveMediaUrl(item.imageUrl, this.appConfig.apiBaseUrl);
   }
 
+  protected itemDisplayName(item: CartItem): string {
+    return item.productName || item.productCode || item.sku || `San pham #${item.productId}`;
+  }
+
+  protected itemInitial(item: CartItem): string {
+    return this.itemDisplayName(item).trim().charAt(0).toUpperCase() || '#';
+  }
+
   protected formatCurrency(value: number | null | undefined, currencyCode: string | null | undefined): string {
     if (value === null || value === undefined) {
       return '-';
@@ -716,7 +724,7 @@ export class CartPage {
       finalize(() => this.cartStore.loadPricingPreview().subscribe({ error: () => undefined })),
     ).subscribe({
       next: () => {
-        this.notificationService.success(`Da cap nhat ${item.productName} thanh so luong ${quantity}.`);
+        this.notificationService.success(`Da cap nhat ${this.itemDisplayName(item)} thanh so luong ${quantity}.`);
       },
       error: (error) => {
         const mapped = this.errorMapper.map(error);

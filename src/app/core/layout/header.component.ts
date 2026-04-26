@@ -1,13 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, input, output } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { LanguageSwitcherComponent } from '../i18n/language-switcher.component';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { AuthStore } from '../state/auth.store';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink, LanguageSwitcherComponent, TranslatePipe],
   template: `
     <header class="header">
       <div class="heading-group">
@@ -17,7 +19,7 @@ import { AuthStore } from '../state/auth.store';
           (click)="menuToggle.emit()"
           [attr.aria-expanded]="sidebarOpen()"
           aria-controls="app-sidebar"
-          aria-label="Mo menu dieu huong"
+          [attr.aria-label]="'common.openNavigation' | appTranslate"
         >
           <span></span>
           <span></span>
@@ -25,20 +27,25 @@ import { AuthStore } from '../state/auth.store';
         </button>
 
         <div>
-          <p class="eyebrow">Admin</p>
+          <p class="eyebrow">{{ 'admin.area' | appTranslate }}</p>
           <h1>TTL Ecommerce</h1>
         </div>
       </div>
 
       <div class="user-box">
         <div class="user-copy">
-          <strong>{{ authStore.currentUser()?.displayName || 'Guest' }}</strong>
-          <p>{{ authStore.currentUser()?.email || 'Chua dang nhap' }}</p>
+          <strong>{{ authStore.currentUser()?.displayName || ('common.guest' | appTranslate) }}</strong>
+          <p>{{ authStore.currentUser()?.email || ('common.notSignedIn' | appTranslate) }}</p>
         </div>
 
-        @if (authStore.isAuthenticated()) {
-          <button type="button" class="logout-button" (click)="logout()">Dang xuat</button>
-        }
+        <div class="header-actions">
+          <app-language-switcher></app-language-switcher>
+          <a class="home-link" [routerLink]="'/home'">{{ 'common.home' | appTranslate }}</a>
+
+          @if (authStore.isAuthenticated()) {
+            <button type="button" class="logout-button" (click)="logout()">{{ 'common.logout' | appTranslate }}</button>
+          }
+        </div>
       </div>
     </header>
   `,
@@ -106,6 +113,14 @@ import { AuthStore } from '../state/auth.store';
       gap: 0.75rem;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .user-copy {
       text-align: right;
     }
@@ -132,6 +147,18 @@ import { AuthStore } from '../state/auth.store';
       font: inherit;
     }
 
+    .home-link {
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 0.7rem 1rem;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
     @media (max-width: 960px) {
       .header {
         padding: 0.875rem 1rem;
@@ -151,6 +178,10 @@ import { AuthStore } from '../state/auth.store';
       .user-box {
         width: 100%;
         justify-content: space-between;
+      }
+
+      .header-actions {
+        justify-content: flex-start;
       }
 
       .user-copy {

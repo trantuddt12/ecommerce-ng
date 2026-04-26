@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { finalize, forkJoin } from 'rxjs';
 import { AppConfig } from '../../../core/config/app-config.model';
+import { AuthStore } from '../../../core/state/auth.store';
 import {
   AdminProductDetail,
   AdminProductListItem,
@@ -33,7 +34,7 @@ import { CategoryApiService } from '../../../core/services/category-api.service'
 import { CategoryAttributeApiService } from '../../../core/services/category-attribute-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { ProductApiService } from '../../../core/services/product-api.service';
+import { ProductApiService, ProductStatusValue } from '../../../core/services/product-api.service';
 import { APP_CONFIG } from '../../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../../core/utils/media-url.util';
 
@@ -110,8 +111,14 @@ interface DuplicateSignatureInfo {
             </div>
 
             <div class="product-hero-actions">
-              <button mat-flat-button color="primary" type="button" (click)="startCreateProduct()" [disabled]="loading()">Tao product moi</button>
-              <button mat-stroked-button type="button" (click)="loadProducts()" [disabled]="loading()">Tai danh sach</button>
+              <button mat-flat-button color="primary" class="product-hero-primary-button" type="button" (click)="startCreateProduct()" [disabled]="loading()">
+                <mat-icon fontSet="material-symbols-outlined">add_circle</mat-icon>
+                Tao product moi
+              </button>
+              <button mat-stroked-button class="product-hero-secondary-button" type="button" (click)="loadProducts()" [disabled]="loading()">
+                <mat-icon fontSet="material-symbols-outlined">refresh</mat-icon>
+                Tai danh sach
+              </button>
             </div>
           </div>
         </mat-card-content>
@@ -200,9 +207,15 @@ interface DuplicateSignatureInfo {
               </mat-form-field>
             </div>
 
-            <div class="catalog-actions">
-              <button mat-flat-button color="primary" type="button" (click)="loadProducts()" [disabled]="loading()">Ap dung filter</button>
-              <button mat-stroked-button type="button" (click)="resetFilters()" [disabled]="loading()">Reset filter</button>
+            <div class="catalog-actions product-filter-actions">
+              <button mat-flat-button color="primary" class="product-action-button" type="button" (click)="loadProducts()" [disabled]="loading()">
+                <mat-icon fontSet="material-symbols-outlined">filter_alt</mat-icon>
+                Ap dung filter
+              </button>
+              <button mat-stroked-button class="product-secondary-button" type="button" (click)="resetFilters()" [disabled]="loading()">
+                <mat-icon fontSet="material-symbols-outlined">restart_alt</mat-icon>
+                Reset filter
+              </button>
             </div>
           </mat-card-content>
         </mat-card>
@@ -216,7 +229,7 @@ interface DuplicateSignatureInfo {
             <div class="catalog-panel-header">
               <div>
                 <h3>Danh sach products</h3>
-                <p>Chon mot row de nap detail vao editor va sua theo schema category.</p>
+                <p>Chon mot row de nap detail vao editor, cap nhat lifecycle va sua theo schema category.</p>
               </div>
             </div>
 
@@ -290,8 +303,37 @@ interface DuplicateSignatureInfo {
                   <ng-container matColumnDef="actions">
                     <th mat-header-cell *matHeaderCellDef>Actions</th>
                     <td mat-cell *matCellDef="let product">
-                      <div class="catalog-actions catalog-actions-inline">
-                        <button mat-stroked-button type="button" (click)="editProduct(product)">Sua</button>
+                      <div class="catalog-actions catalog-actions-inline product-list-actions">
+                        <button mat-flat-button color="primary" class="product-action-button" type="button" (click)="editProduct(product)">
+                          <mat-icon fontSet="material-symbols-outlined">edit</mat-icon>
+                          Sua
+                        </button>
+                        <button
+                          mat-stroked-button
+                          color="accent"
+                          type="button"
+                          (click)="toggleProductStatus(product)"
+                          [disabled]="loading() || !canManageProductStatus() || product.status === 'ARCHIVED'"
+                        >
+                          {{ product.status === 'ACTIVE' ? 'Chuyen INACTIVE' : 'Chuyen ACTIVE' }}
+                        </button>
+                        <button
+                          mat-stroked-button
+                          type="button"
+                          (click)="moveProductToDraft(product)"
+                          [disabled]="loading() || !canManageProductStatus() || product.status === 'DRAFT'"
+                        >
+                          Ve DRAFT
+                        </button>
+                        <button
+                          mat-stroked-button
+                          color="warn"
+                          type="button"
+                          (click)="archiveProduct(product)"
+                          [disabled]="loading() || !canManageProductStatus() || product.status === 'ARCHIVED'"
+                        >
+                          Archive
+                        </button>
                       </div>
                     </td>
                   </ng-container>
@@ -355,13 +397,68 @@ interface DuplicateSignatureInfo {
                       }
                     </mat-select>
                   </mat-form-field>
+                </div>
+
+                <div class="catalog-form-grid">
+                  <div class="product-category-search-shell">
+                    <div class="product-category-search-copy">
+                      <div class="product-section-title">
+                        <mat-icon class="product-section-icon" fontSet="material-symbols-outlined">manage_search</mat-icon>
+                        <span>Search category</span>
+                      </div>
+                      <p>Tim nhanh theo ten, code, path hoac category cha truoc khi chon schema cho product.</p>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="product-category-search-input">
+                      <mat-label>Tim category cho editor</mat-label>
+                      <mat-icon matPrefix fontSet="material-symbols-outlined">search</mat-icon>
+                      <input
+                        matInput
+                        [(ngModel)]="editorCategorySearchTerm"
+                        [ngModelOptions]="{ standalone: true }"
+                        placeholder="VD: dien thoai, iphone, apple"
+                      />
+                      @if (editorCategorySearchTerm) {
+                        <button mat-icon-button matSuffix type="button" aria-label="Xoa tu khoa category" (click)="clearEditorCategorySearch()">
+                          <mat-icon fontSet="material-symbols-outlined">close</mat-icon>
+                        </button>
+                      }
+                    </mat-form-field>
+
+                    <div class="product-category-search-meta">
+                      <span>
+                        <mat-icon fontSet="material-symbols-outlined">folder_open</mat-icon>
+                        {{ filteredEditorCategories().length }} / {{ categories().length }} category phu hop
+                      </span>
+                      @if (selectedEditorCategory(); as activeCategory) {
+                        <span>
+                          <mat-icon fontSet="material-symbols-outlined">target</mat-icon>
+                          Dang chon: {{ renderCategoryOption(activeCategory) }}
+                        </span>
+                      } @else {
+                        <span>
+                          <mat-icon fontSet="material-symbols-outlined">info</mat-icon>
+                          Chua chon category cho product.
+                        </span>
+                      }
+                    </div>
+                  </div>
 
                   <mat-form-field appearance="outline">
                     <mat-label>Category</mat-label>
                     <mat-select [(ngModel)]="editor().categoryId" (ngModelChange)="onEditorCategoryChange($event)">
+                      <mat-select-trigger>
+                        @if (selectedEditorCategory(); as activeCategory) {
+                          {{ renderCategoryOption(activeCategory) }}
+                        } @else {
+                          Chon category
+                        }
+                      </mat-select-trigger>
                       <mat-option [value]="null">Chon category</mat-option>
-                      @for (category of categories(); track category.id) {
-                        <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                      @for (category of filteredEditorCategories(); track category.id) {
+                        <mat-option [value]="category.id">{{ renderCategoryOption(category) }}</mat-option>
+                      } @empty {
+                        <mat-option disabled>Khong co category phu hop voi tu khoa hien tai</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -429,9 +526,23 @@ interface DuplicateSignatureInfo {
                 @if (editor().categoryId && availableVariantAttributes().length) {
                   <div class="product-schema-summary">
                     @for (attribute of availableVariantAttributes(); track attribute.id) {
-                      <mat-chip class="catalog-chip-soft">{{ attribute.name }}</mat-chip>
+                      <mat-chip class="catalog-chip-soft">
+                        {{ attribute.name }}
+                        @if (resolveVariantAttributeMapping(attribute.id); as mapping) {
+                          · {{ mapping.inherited ? 'ke thua' : 'truc tiep' }}
+                        }
+                      </mat-chip>
                     }
                   </div>
+
+                  @if (selectedEditorCategory(); as activeCategory) {
+                    <div class="product-schema-note">
+                      <span>Schema category: {{ renderCategoryOption(activeCategory) }}</span>
+                      @if (activeCategory.parentId) {
+                        <span>Category con tu dong dung variant-axis mapping ke thua tu category cha neu chua override.</span>
+                      }
+                    </div>
+                  }
                 } @else if (editor().categoryId) {
                   <div class="catalog-empty">Category nay chua co variant-axis mapping nao.</div>
                 } @else {
@@ -658,10 +769,14 @@ interface DuplicateSignatureInfo {
               </section>
 
               <div class="catalog-actions product-submit-actions">
-                <button mat-flat-button color="primary" type="button" (click)="saveProduct()" [disabled]="loading()">
+                <button mat-flat-button color="primary" class="product-action-button" type="button" (click)="saveProduct()" [disabled]="loading()">
+                  <mat-icon fontSet="material-symbols-outlined">save</mat-icon>
                   {{ editingProductId() ? 'Cap nhat product' : 'Tao product' }}
                 </button>
-                <button mat-stroked-button type="button" (click)="resetEditor()" [disabled]="loading()">Reset form</button>
+                <button mat-stroked-button class="product-secondary-button" type="button" (click)="resetEditor()" [disabled]="loading()">
+                  <mat-icon fontSet="material-symbols-outlined">refresh</mat-icon>
+                  Reset form
+                </button>
               </div>
             </div>
           </mat-card-content>
@@ -676,7 +791,22 @@ interface DuplicateSignatureInfo {
       }
 
       .product-hero {
+        position: relative;
+        overflow: hidden;
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(37, 99, 235, 0.94) 55%, rgba(14, 165, 233, 0.92) 100%);
+        box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
+      }
+
+      .product-hero::after {
+        content: '';
+        position: absolute;
+        inset: auto -4rem -6rem auto;
+        width: 16rem;
+        height: 16rem;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(191, 219, 254, 0.38), rgba(191, 219, 254, 0));
+        animation: productFloat 7s ease-in-out infinite;
+        pointer-events: none;
       }
 
       .product-hero-grid {
@@ -691,6 +821,38 @@ interface DuplicateSignatureInfo {
         gap: 0.75rem;
         flex-wrap: wrap;
         justify-content: flex-end;
+      }
+
+      .product-hero-primary-button,
+      .product-hero-secondary-button,
+      .product-action-button,
+      .product-secondary-button {
+        min-height: 44px;
+        border-radius: 999px;
+        padding: 0 1rem;
+      }
+
+      .product-hero-primary-button,
+      .product-hero-secondary-button,
+      .product-action-button,
+      .product-secondary-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .product-hero-secondary-button,
+      .product-secondary-button {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(191, 219, 254, 0.35);
+      }
+
+      .product-filter-actions {
+        flex-wrap: wrap;
+      }
+
+      .product-list-actions {
+        flex-wrap: wrap;
       }
 
       .product-editor-shell {
@@ -796,6 +958,42 @@ interface DuplicateSignatureInfo {
         flex-wrap: wrap;
       }
 
+      .product-category-search-shell {
+        display: grid;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        background: rgba(239, 246, 255, 0.78);
+      }
+
+      .product-category-search-copy p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.92rem;
+      }
+
+      .product-category-search-input {
+        width: 100%;
+      }
+
+      .product-category-search-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .product-category-search-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #334155;
+        font-size: 0.84rem;
+      }
+
       .product-schema-summary,
       .product-warning-list {
         display: flex;
@@ -806,6 +1004,18 @@ interface DuplicateSignatureInfo {
       .product-warning-box {
         display: grid;
         gap: 0.5rem;
+      }
+
+      .product-category-search-field {
+        width: 100%;
+      }
+
+      .product-schema-note {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        color: #64748b;
+        font-size: 0.92rem;
       }
 
       .product-warning-list {
@@ -1040,6 +1250,7 @@ export class ProductsPage {
   private readonly brandApi = inject(BrandApiService);
   private readonly categoryApi = inject(CategoryApiService);
   private readonly categoryAttributeApi = inject(CategoryAttributeApiService);
+  private readonly authStore = inject(AuthStore);
   private readonly notifications = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
 
@@ -1058,6 +1269,7 @@ export class ProductsPage {
   protected readonly selectedEditorImageId = signal<number | null>(null);
   protected readonly editor = signal<ProductEditorState>(createEmptyEditor());
   protected readonly displayedColumns = ['name', 'category', 'price', 'status', 'variants', 'actions'];
+  protected editorCategorySearchTerm = '';
   protected readonly filters = {
     keyword: '',
     status: '',
@@ -1082,7 +1294,9 @@ export class ProductsPage {
   protected loadReferenceData(): void {
     forkJoin({
       brands: this.brandApi.list(),
-      categories: this.categoryApi.list(),
+      categories: this.categoryApi.list({size : 1000, sortBy :'name'}).pipe(
+        
+      ),
       attributes: this.attributeApi.listDefinitions(),
       options: this.attributeApi.listOptions(),
     }).subscribe({
@@ -1206,6 +1420,41 @@ export class ProductsPage {
   protected availableVariantAttributes(): AttributeDefinition[] {
     const allowedAttributeIds = new Set(this.categoryVariantAttributes().map((item) => item.attributeId));
     return this.variantAttributes().filter((attribute) => allowedAttributeIds.has(attribute.id));
+  }
+
+  protected filteredEditorCategories(): Category[] {
+    const normalizedTerm = normalizeText(this.editorCategorySearchTerm);
+    if (!normalizedTerm) {
+      return this.sortedCategories();
+    }
+
+    return this.sortedCategories().filter((category) => {
+      const haystack = normalizeText([
+        category.name,
+        category.code,
+        category.path,
+        category.parentName,
+        this.resolveParentName(category.parentId),
+      ].filter(Boolean).join(' '));
+      return haystack.includes(normalizedTerm);
+    });
+  }
+
+  protected clearEditorCategorySearch(): void {
+    this.editorCategorySearchTerm = '';
+  }
+
+  protected selectedEditorCategory(): Category | undefined {
+    const categoryId = this.editor().categoryId;
+    return this.categories().find((category) => category.id === categoryId);
+  }
+
+  protected renderCategoryOption(category: Category): string {
+    return category.path || this.buildCategoryLabel(category);
+  }
+
+  protected resolveVariantAttributeMapping(attributeId: number): CategoryAttribute | undefined {
+    return this.categoryVariantAttributes().find((item) => item.attributeId === attributeId);
   }
 
   protected availableVariantAttributesForSelection(
@@ -1400,6 +1649,54 @@ export class ProductsPage {
     return this.categories().find((category) => category.id === categoryId)?.name ?? `#${categoryId}`;
   }
 
+  protected resolveParentName(parentId: number | null | undefined): string {
+    if (!parentId) {
+      return '';
+    }
+
+    return this.categories().find((category) => category.id === parentId)?.name ?? '';
+  }
+
+  protected canManageProductStatus(): boolean {
+    const permissions = this.authStore.permissions();
+    return permissions.has('PRODUCT_UPDATE') || permissions.has('PRODUCT_MANAGE') || permissions.has('PRODUCT_PUBLISH');
+  }
+
+  protected toggleProductStatus(product: AdminProductListItem): void {
+    const nextStatus: ProductStatusValue = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    this.updateProductStatus(product, nextStatus);
+  }
+
+  protected moveProductToDraft(product: AdminProductListItem): void {
+    this.updateProductStatus(product, 'DRAFT');
+  }
+
+  protected archiveProduct(product: AdminProductListItem): void {
+    this.updateProductStatus(product, 'ARCHIVED');
+  }
+
+  private updateProductStatus(product: AdminProductListItem, status: ProductStatusValue): void {
+    if (product.status === status) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.productApi.updateStatus(product.id, status)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (updatedProduct) => {
+          this.patchProductListItem(updatedProduct);
+          if (this.editingProductId() === updatedProduct.id) {
+            this.editor.set(remapEditorForSchema(mapProductDetailToEditor(updatedProduct), this.availableVariantAttributes()));
+            this.syncSelectedEditorImage(updatedProduct.images);
+          }
+          this.notifications.success(`Da chuyen product ${product.name} sang ${status}.`);
+        },
+        error: (error) => this.handleError(error),
+      });
+  }
+
   private editProductById(productId: number): void {
     this.loading.set(true);
     this.errorMessage.set('');
@@ -1425,7 +1722,7 @@ export class ProductsPage {
       return;
     }
 
-    this.categoryAttributeApi.list(categoryId).subscribe({
+    this.categoryAttributeApi.list(categoryId, true).subscribe({
       next: (items) => {
         this.categoryVariantAttributes.set(items.filter((item) => item.variantAxis));
 
@@ -1553,6 +1850,15 @@ export class ProductsPage {
       .join('|');
   }
 
+  private sortedCategories(): Category[] {
+    return [...this.categories()].sort((first, second) => this.renderCategoryOption(first).localeCompare(this.renderCategoryOption(second), 'vi'));
+  }
+
+  private buildCategoryLabel(category: Category): string {
+    const parentName = category.parentName ?? this.resolveParentName(category.parentId);
+    return parentName ? `${parentName} / ${category.name}` : category.name;
+  }
+
   private handleError(error: unknown): void {
     const mappedError = this.errorMapper.map(error);
     this.errorMessage.set(mappedError.message);
@@ -1591,6 +1897,9 @@ export class ProductsPage {
 
         return {
           ...item,
+          status: product.status,
+          visibility: product.visibility,
+          publishedAt: product.publishedAt,
           images: product.images,
           thumbnailUrl,
         };
@@ -1696,4 +2005,8 @@ function remapEditorForSchema(editor: ProductEditorState, availableAttributes: A
       };
     }),
   };
+}
+
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? '').trim().toLocaleLowerCase('vi');
 }

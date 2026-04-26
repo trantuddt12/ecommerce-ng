@@ -254,13 +254,13 @@ import { hasPermission } from '../../../core/utils/permission.util';
               <mat-progress-bar class="catalog-progress" mode="indeterminate"></mat-progress-bar>
             }
 
-            <div class="catalog-panel-header">
+            <div class="catalog-panel-header category-list-header">
               <div>
                 <h3>Danh sach categories</h3>
                 <p>Theo doi code, path, lifecycle, product count va child count theo contract moi. Co them merge, soft delete va reorder theo parent.</p>
               </div>
 
-              <button mat-stroked-button type="button" (click)="loadCategories()" [disabled]="loading()">Tai lai</button>
+              <button mat-flat-button color="primary" type="button" (click)="loadCategories()" [disabled]="loading()">Tai lai</button>
             </div>
 
             <div class="catalog-form-grid category-filter-grid">
@@ -328,96 +328,98 @@ import { hasPermission } from '../../../core/utils/permission.util';
                 }
               </div>
 
-              <table mat-table [dataSource]="filteredCategories()" class="catalog-table category-table">
-                <ng-container matColumnDef="name">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('name')">
-                      Name {{ sortIndicator('name') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">
-                    <div>
-                      <strong>{{ category.name }}</strong>
-                      <div class="catalog-inline-meta">
-                        <mat-chip class="catalog-chip-neutral">#{{ category.id }}</mat-chip>
-                        <mat-chip class="catalog-chip-neutral">{{ category.code }}</mat-chip>
-                        <mat-chip class="catalog-chip-soft">{{ category.slug }}</mat-chip>
+              <div class="category-table-wrap">
+                <table mat-table [dataSource]="filteredCategories()" class="catalog-table category-table">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('name')">
+                        Name {{ sortIndicator('name') }}
+                      </button>
+                    </th>
+                    <td mat-cell *matCellDef="let category">
+                      <div>
+                        <strong>{{ category.name }}</strong>
+                        <div class="catalog-inline-meta">
+                          <mat-chip class="catalog-chip-neutral">#{{ category.id }}</mat-chip>
+                          <mat-chip class="catalog-chip-neutral">{{ category.code }}</mat-chip>
+                          <mat-chip class="catalog-chip-soft">{{ category.slug }}</mat-chip>
+                        </div>
+                        <div class="catalog-subtext">{{ displayCategoryPath(category) }}</div>
                       </div>
-                      <div class="catalog-subtext">{{ displayCategoryPath(category) }}</div>
-                    </div>
-                  </td>
-                </ng-container>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="parent">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('parent')">
-                      Parent {{ sortIndicator('parent') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">{{ category.parentName ?? resolveParentName(category.parentId) }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('status')">
-                      Status {{ sortIndicator('status') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">{{ category.status }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="children">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('children')">
-                      Children {{ sortIndicator('children') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">{{ category.childrenCount ?? category.childrenIds.length }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="visibility">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('visibility')">
-                      Flags {{ sortIndicator('visibility') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">
-                    <div class="catalog-inline-meta">
-                      <mat-chip class="catalog-chip-soft">visible: {{ category.visible ? 'yes' : 'no' }}</mat-chip>
-                      <mat-chip class="catalog-chip-soft">assignable: {{ category.assignable ? 'yes' : 'no' }}</mat-chip>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <ng-container matColumnDef="products">
-                  <th mat-header-cell *matHeaderCellDef>
-                    <button class="catalog-sort-button" type="button" (click)="toggleSort('products')">
-                      Products {{ sortIndicator('products') }}
-                    </button>
-                  </th>
-                  <td mat-cell *matCellDef="let category">{{ category.productCount ?? 0 }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef>Action</th>
-                  <td mat-cell *matCellDef="let category">
-                    <div class="catalog-actions">
-                      <button mat-stroked-button type="button" (click)="startEdit(category)" [disabled]="!canManageCategories()">Sua</button>
-                      <button mat-stroked-button type="button" (click)="toggleCategoryStatus(category)" [disabled]="loading() || !canManageCategories()">
-                        {{ category.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                  <ng-container matColumnDef="parent">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('parent')">
+                        Parent {{ sortIndicator('parent') }}
                       </button>
-                      <button mat-stroked-button type="button" (click)="archiveCategory(category)" [disabled]="loading() || category.status === 'ARCHIVED' || !canManageCategories()">
-                        Archive
-                      </button>
-                      <button mat-stroked-button type="button" (click)="promoteCategory(category)" [disabled]="loading() || !canManageCategories()">Len dau</button>
-                      <button mat-stroked-button type="button" (click)="softDeleteCategory(category)" [disabled]="loading() || !canManageCategories()">Delete</button>
-                    </div>
-                  </td>
-                </ng-container>
+                    </th>
+                    <td mat-cell *matCellDef="let category">{{ category.parentName ?? resolveParentName(category.parentId) }}</td>
+                  </ng-container>
 
-                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-              </table>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('status')">
+                        Status {{ sortIndicator('status') }}
+                      </button>
+                    </th>
+                    <td mat-cell *matCellDef="let category">{{ category.status }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="children">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('children')">
+                        Children {{ sortIndicator('children') }}
+                      </button>
+                    </th>
+                    <td mat-cell *matCellDef="let category">{{ category.childrenCount ?? category.childrenIds.length }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="visibility">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('visibility')">
+                        Flags {{ sortIndicator('visibility') }}
+                      </button>
+                    </th>
+                    <td mat-cell *matCellDef="let category">
+                      <div class="catalog-inline-meta">
+                        <mat-chip class="catalog-chip-soft">visible: {{ category.visible ? 'yes' : 'no' }}</mat-chip>
+                        <mat-chip class="catalog-chip-soft">assignable: {{ category.assignable ? 'yes' : 'no' }}</mat-chip>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="products">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <button class="catalog-sort-button" type="button" (click)="toggleSort('products')">
+                        Products {{ sortIndicator('products') }}
+                      </button>
+                    </th>
+                    <td mat-cell *matCellDef="let category">{{ category.productCount ?? 0 }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Action</th>
+                    <td mat-cell *matCellDef="let category">
+                      <div class="catalog-actions category-action-stack">
+                        <button mat-flat-button color="primary" type="button" (click)="startEdit(category)" [disabled]="!canManageCategories()">Sua</button>
+                        <button mat-stroked-button color="accent" type="button" (click)="toggleCategoryStatus(category)" [disabled]="loading() || !canManageCategories()">
+                          {{ category.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                        </button>
+                        <button mat-stroked-button type="button" (click)="archiveCategory(category)" [disabled]="loading() || category.status === 'ARCHIVED' || !canManageCategories()">
+                          Archive
+                        </button>
+                        <button mat-stroked-button type="button" (click)="promoteCategory(category)" [disabled]="loading() || !canManageCategories()">Len dau</button>
+                        <button mat-flat-button color="warn" type="button" (click)="softDeleteCategory(category)" [disabled]="loading() || !canManageCategories()">Delete</button>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                </table>
+              </div>
 
               <div class="category-pagination">
                 <button mat-stroked-button type="button" (click)="goToPreviousPage()" [disabled]="loading() || currentPage() === 1">Trang truoc</button>
@@ -539,6 +541,59 @@ import { hasPermission } from '../../../core/utils/permission.util';
   styles: [`
     .category-page {
       gap: 1.5rem;
+    }
+
+    .category-hero {
+      color: #f8fafc;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(29, 78, 216, 0.98) 55%, rgba(30, 64, 175, 0.96) 100%);
+      box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+    }
+
+    .category-hero .catalog-eyebrow,
+    .category-hero p,
+    .category-badge-label {
+      color: rgba(226, 232, 240, 0.96);
+    }
+
+    .category-hero h2,
+    .category-badge-card strong {
+      color: #ffffff;
+    }
+
+    .category-badge-card {
+      background: rgba(15, 23, 42, 0.28);
+      border: 1px solid rgba(191, 219, 254, 0.18);
+      backdrop-filter: blur(6px);
+    }
+
+    .category-list-header {
+      align-items: center;
+    }
+
+    .category-action-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .category-table-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .category-table {
+      min-width: 980px;
+    }
+
+    .category-table .mat-mdc-cell,
+    .category-table .mat-mdc-header-cell {
+      vertical-align: top;
+      white-space: normal;
+    }
+
+    .category-table .catalog-subtext,
+    .category-table strong {
+      overflow-wrap: anywhere;
     }
 
     .category-filter-grid,

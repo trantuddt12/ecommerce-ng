@@ -7,6 +7,7 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { APP_CONFIG } from './core/tokens/app-config.token';
 import { AppInitService } from './core/services/app-init.service';
+import { acceptLanguageInterceptor } from './core/interceptors/accept-language.interceptor';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { credentialsInterceptor } from './core/interceptors/credentials.interceptor';
 import { errorMappingInterceptor } from './core/interceptors/error-mapping.interceptor';
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([
         loadingInterceptor,
+        acceptLanguageInterceptor,
         credentialsInterceptor,
         authTokenInterceptor,
         refreshTokenInterceptor,

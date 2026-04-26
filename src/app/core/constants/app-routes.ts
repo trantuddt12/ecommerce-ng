@@ -1,6 +1,6 @@
 export const APP_ROUTES = {
   home: '/home',
-  homeProducts: '/home/products',
+  homeProducts: '/home',
   dashboard: '/admin/dashboard',
   users: '/admin/management/users',
   roles: '/admin/management/roles',

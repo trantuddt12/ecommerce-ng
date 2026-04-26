@@ -9,10 +9,10 @@ import { BaseApiService } from '../http/base-api.service';
 export class CategoryAttributeApiService {
   private readonly baseApi = inject(BaseApiService);
 
-  list(categoryId: number): Observable<CategoryAttribute[]> {
-    return this.baseApi.get<CategoryAttribute[] | ApiEnvelope<CategoryAttribute[]>>(API_ENDPOINTS.attribute.byCategory(categoryId)).pipe(
-      map((response) => unwrapApiEnvelope(response)),
-    );
+  list(categoryId: number, includeInherited = false): Observable<CategoryAttribute[]> {
+    return this.baseApi
+      .get<CategoryAttribute[] | ApiEnvelope<CategoryAttribute[]>>(API_ENDPOINTS.attribute.byCategory(categoryId), { includeInherited })
+      .pipe(map((response) => unwrapApiEnvelope(response)));
   }
 
   create(categoryId: number, request: CategoryAttributeRequest): Observable<CategoryAttribute> {

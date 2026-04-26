@@ -146,61 +146,63 @@ import { hasPermission } from '../../../core/utils/permission.util';
             </div>
 
             @if (filteredUsers().length) {
-              <table mat-table [dataSource]="filteredUsers()" class="management-table">
-                <ng-container matColumnDef="identity">
-                  <th mat-header-cell *matHeaderCellDef>User</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div>
-                      <strong>{{ user.username }}</strong>
-                      <div class="management-subtext">#{{ user.id }} · {{ user.email }}</div>
-                    </div>
-                  </td>
-                </ng-container>
+              <div class="management-table-wrap">
+                <table mat-table [dataSource]="filteredUsers()" class="management-table">
+                  <ng-container matColumnDef="identity">
+                    <th mat-header-cell *matHeaderCellDef>User</th>
+                    <td mat-cell *matCellDef="let user">
+                      <div>
+                        <strong>{{ user.username }}</strong>
+                        <div class="management-subtext">#{{ user.id }} · {{ user.email }}</div>
+                      </div>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="phone">
-                  <th mat-header-cell *matHeaderCellDef>Phone</th>
-                  <td mat-cell *matCellDef="let user">{{ user.phoneNumber || '-' }}</td>
-                </ng-container>
+                  <ng-container matColumnDef="phone">
+                    <th mat-header-cell *matHeaderCellDef>Phone</th>
+                    <td mat-cell *matCellDef="let user">{{ user.phoneNumber || '-' }}</td>
+                  </ng-container>
 
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let user">
-                    <mat-chip class="management-chip" [class.management-chip-active]="isActive(user.status)">{{ user.status || 'UNKNOWN' }}</mat-chip>
-                  </td>
-                </ng-container>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let user">
+                      <mat-chip class="management-chip" [class.management-chip-active]="isActive(user.status)">{{ user.status || 'UNKNOWN' }}</mat-chip>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="roles">
-                  <th mat-header-cell *matHeaderCellDef>Roles</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="management-chip-list">
-                      @if (user.roles?.length) {
-                        @for (role of user.roles; track role.id) {
-                          <mat-chip class="management-chip management-chip-soft">{{ role.name }}</mat-chip>
+                  <ng-container matColumnDef="roles">
+                    <th mat-header-cell *matHeaderCellDef>Roles</th>
+                    <td mat-cell *matCellDef="let user">
+                      <div class="management-chip-list">
+                        @if (user.roles?.length) {
+                          @for (role of user.roles; track role.id) {
+                            <mat-chip class="management-chip management-chip-soft">{{ role.name }}</mat-chip>
+                          }
+                        } @else if (user.roleIds?.length) {
+                          @for (roleId of user.roleIds; track roleId) {
+                            <mat-chip class="management-chip management-chip-soft">#{{ roleId }}</mat-chip>
+                          }
+                        } @else {
+                          <span class="management-subtext">No roles</span>
                         }
-                      } @else if (user.roleIds?.length) {
-                        @for (roleId of user.roleIds; track roleId) {
-                          <mat-chip class="management-chip management-chip-soft">#{{ roleId }}</mat-chip>
-                        }
-                      } @else {
-                        <span class="management-subtext">No roles</span>
-                      }
-                    </div>
-                  </td>
-                </ng-container>
+                      </div>
+                    </td>
+                  </ng-container>
 
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef>Action</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="management-actions">
-                      <button mat-stroked-button type="button" (click)="startEdit(user)">Sua</button>
-                      <button mat-flat-button color="warn" type="button" (click)="deleteUser(user)" [disabled]="loading() || !canManageUsers()">Xoa</button>
-                    </div>
-                  </td>
-                </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Action</th>
+                    <td mat-cell *matCellDef="let user">
+                      <div class="management-actions">
+                        <button mat-stroked-button type="button" (click)="startEdit(user)">Sua</button>
+                        <button mat-flat-button color="warn" type="button" (click)="deleteUser(user)" [disabled]="loading() || !canManageUsers()">Xoa</button>
+                      </div>
+                    </td>
+                  </ng-container>
 
-                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-              </table>
+                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                </table>
+              </div>
             } @else {
               <div class="management-empty">Khong co user nao phu hop bo loc hien tai.</div>
             }
@@ -209,7 +211,28 @@ import { hasPermission } from '../../../core/utils/permission.util';
       </section>
     </section>
   `,
-  styles: [``],
+  styles: [`
+    .management-table-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .management-table {
+      min-width: 920px;
+    }
+
+    .management-table .mat-mdc-cell,
+    .management-table .mat-mdc-header-cell {
+      vertical-align: top;
+      white-space: normal;
+    }
+
+    .management-subtext,
+    .management-chip-list,
+    .management-table strong {
+      overflow-wrap: anywhere;
+    }
+  `],
 })
 export class UsersPage {
   private readonly userApi = inject(UserApiService);

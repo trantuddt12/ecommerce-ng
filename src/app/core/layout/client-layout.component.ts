@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { APP_ROUTES } from '../constants/app-routes';
+import { LanguageSwitcherComponent } from '../i18n/language-switcher.component';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { AuthStore } from '../state/auth.store';
 import { CartStore } from '../state/cart.store';
@@ -9,7 +11,7 @@ import { CartStore } from '../state/cart.store';
 @Component({
   selector: 'app-client-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, LanguageSwitcherComponent, TranslatePipe],
   template: `
     <section class="client-shell">
       <header class="client-header">
@@ -17,30 +19,31 @@ import { CartStore } from '../state/cart.store';
           <a class="client-branding" [routerLink]="APP_ROUTES.homeProducts">
             <span class="client-brand-mark">TTL</span>
             <span class="client-brand-copy">
-              <strong>TTL Dien may</strong>
-              <small>Mua sam nhanh, giao dien gon gang</small>
+              <strong>{{ 'client.brand' | appTranslate }}</strong>
+              <small>{{ 'client.tagline' | appTranslate }}</small>
             </span>
           </a>
 
           <nav class="client-nav" aria-label="Client navigation">
-            <a [routerLink]="APP_ROUTES.homeProducts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">San pham</a>
+            <a [routerLink]="APP_ROUTES.homeProducts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">{{ 'common.products' | appTranslate }}</a>
             @if (authStore.isAuthenticated()) {
-              <a [routerLink]="APP_ROUTES.cart" routerLinkActive="active">Gio hang <span class="client-cart-badge">{{ cartCount() }}</span></a>
-              <a [routerLink]="APP_ROUTES.myOrders" routerLinkActive="active">Don hang</a>
+              <a [routerLink]="APP_ROUTES.cart" routerLinkActive="active">{{ 'common.cart' | appTranslate }} <span class="client-cart-badge">{{ cartCount() }}</span></a>
+              <a [routerLink]="APP_ROUTES.myOrders" routerLinkActive="active">{{ 'common.orders' | appTranslate }}</a>
             } @else {
-              <a [routerLink]="APP_ROUTES.login" routerLinkActive="active">Dang nhap</a>
+              <a [routerLink]="APP_ROUTES.login" routerLinkActive="active">{{ 'common.login' | appTranslate }}</a>
             }
           </nav>
 
           <div class="client-user-box">
             <div class="client-user-copy">
-              <strong>{{ authStore.currentUser()?.displayName || 'Khach vang lai' }}</strong>
-              <p>{{ authStore.currentUser()?.email || 'Chon san pham phu hop cho ban' }}</p>
+              <strong>{{ authStore.currentUser()?.displayName || ('client.guestName' | appTranslate) }}</strong>
+              <p>{{ authStore.currentUser()?.email || ('client.guestHint' | appTranslate) }}</p>
             </div>
+            <app-language-switcher></app-language-switcher>
             @if (authStore.isAuthenticated()) {
-              <button type="button" class="client-action-button secondary" (click)="logout()">Dang xuat</button>
+              <button type="button" class="client-action-button secondary" (click)="logout()">{{ 'common.logout' | appTranslate }}</button>
             } @else {
-              <a class="client-action-button" [routerLink]="APP_ROUTES.login">Vao tai khoan</a>
+              <a class="client-action-button" [routerLink]="APP_ROUTES.login">{{ 'common.account' | appTranslate }}</a>
             }
           </div>
         </div>
@@ -55,7 +58,7 @@ import { CartStore } from '../state/cart.store';
       <footer class="client-footer">
         <div class="client-container client-footer-inner">
           <span>TTL Ecommerce</span>
-          <span>Mua sam don gian, tap trung vao san pham va don hang</span>
+          <span>{{ 'client.footerDescription' | appTranslate }}</span>
         </div>
       </footer>
     </section>
