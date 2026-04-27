@@ -11,7 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize } from 'rxjs';
 import { AppConfig } from '../../../core/config/app-config.model';
 import { AuthStore } from '../../../core/state/auth.store';
 import {
@@ -28,13 +28,11 @@ import {
   ProductImage,
   ProductVariantAttribute,
 } from '../../../core/models/catalog.models';
-import { AttributeApiService } from '../../../core/services/attribute-api.service';
-import { BrandApiService } from '../../../core/services/brand-api.service';
-import { CategoryApiService } from '../../../core/services/category-api.service';
 import { CategoryAttributeApiService } from '../../../core/services/category-attribute-api.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { ProductApiService, ProductStatusValue } from '../../../core/services/product-api.service';
+import { ReferenceDataService } from '../../../core/services/reference-data.service';
 import { APP_CONFIG } from '../../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../../core/utils/media-url.util';
 
@@ -1246,23 +1244,21 @@ interface DuplicateSignatureInfo {
 })
 export class ProductsPage {
   private readonly productApi = inject(ProductApiService);
-  private readonly attributeApi = inject(AttributeApiService);
-  private readonly brandApi = inject(BrandApiService);
-  private readonly categoryApi = inject(CategoryApiService);
   private readonly categoryAttributeApi = inject(CategoryAttributeApiService);
   private readonly authStore = inject(AuthStore);
   private readonly notifications = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
+  private readonly referenceData = inject(ReferenceDataService);
 
   @ViewChild('productEditorPanel') private productEditorPanel?: ElementRef<HTMLElement>;
   @ViewChild('productNameInput') private productNameInput?: ElementRef<HTMLInputElement>;
 
   protected readonly products = signal<AdminProductListItem[]>([]);
-  protected readonly brands = signal<Brand[]>([]);
-  protected readonly categories = signal<Category[]>([]);
-  protected readonly variantAttributes = signal<AttributeDefinition[]>([]);
+  protected readonly brands = this.referenceData.brands;
+  protected readonly categories = this.referenceData.categories;
+  protected readonly variantAttributes = this.referenceData.variantAttributes;
   protected readonly categoryVariantAttributes = signal<CategoryAttribute[]>([]);
-  protected readonly attributeOptions = signal<AttributeValue[]>([]);
+  protected readonly attributeOptions = this.referenceData.attributeOptions;
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly editingProductId = signal<number | null>(null);
@@ -1283,31 +1279,12 @@ export class ProductsPage {
   private pendingImageFiles: File[] = [];
 
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
-    this.loadReferenceData();
+    this.referenceData.load();
     this.loadProducts();
   }
 
   protected resolveProductImageUrl(url: string | null | undefined): string | null {
     return resolveMediaUrl(url, this.config.apiBaseUrl);
-  }
-
-  protected loadReferenceData(): void {
-    forkJoin({
-      brands: this.brandApi.list(),
-      categories: this.categoryApi.list({size : 1000, sortBy :'name'}).pipe(
-        
-      ),
-      attributes: this.attributeApi.listDefinitions(),
-      options: this.attributeApi.listOptions(),
-    }).subscribe({
-      next: ({ brands, categories, attributes, options }) => {
-        this.brands.set(brands);
-        this.categories.set(categories);
-        this.variantAttributes.set(attributes.filter((attribute) => attribute.variantAxis));
-        this.attributeOptions.set(options);
-      },
-      error: (error) => this.handleError(error),
-    });
   }
 
   protected loadProducts(): void {

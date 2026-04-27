@@ -1,36 +1,38 @@
-import { Injectable } from '@angular/core';
-import { catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
+import { DestroyRef, Injectable, inject } from '@angular/core';
+import { catchError, firstValueFrom, map, of, switchMap, tap } from 'rxjs';
 import { AuthStore } from '../state/auth.store';
 import { AuthService } from './auth.service';
 import { CurrentUserService } from './current-user.service';
+import { ReferenceDataService } from './reference-data.service';
 import { SessionService } from './session.service';
 
 @Injectable({ providedIn: 'root' })
 export class AppInitService {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly currentUserService: CurrentUserService,
-    private readonly sessionService: SessionService,
-    private readonly authStore: AuthStore,
-  ) {}
+  private readonly authService = inject(AuthService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly sessionService = inject(SessionService);
+  private readonly authStore = inject(AuthStore);
+  private readonly refData = inject(ReferenceDataService);
 
   async initialize(): Promise<void> {
     if (!this.sessionService.hasSession()) {
-      await firstValueFrom(this.tryRefreshObservable());
+      await firstValueFrom(this.tryRefreshAndLoadRefData());
       return;
     }
 
     await firstValueFrom(
       this.currentUserService.loadCurrentUser().pipe(
         map(() => void 0),
-        catchError(() => this.tryRefreshObservable()),
+        catchError(() => this.tryRefreshAndLoadRefData()),
+        tap(() => {
+          this.refData.load();
+          this.authStore.setAuthInitialized(true);
+        }),
       ),
     );
-
-    this.authStore.setAuthInitialized(true);
   }
 
-  private tryRefreshObservable() {
+  private tryRefreshAndLoadRefData() {
     return this.authService.refresh().pipe(
       switchMap(() => this.currentUserService.loadCurrentUser()),
       map(() => void 0),
@@ -38,14 +40,10 @@ export class AppInitService {
         this.sessionService.clearSession();
         return of(void 0);
       }),
-      tapValue(() => this.authStore.setAuthInitialized(true)),
+      tap(() => {
+        this.refData.load();
+        this.authStore.setAuthInitialized(true);
+      }),
     );
   }
-}
-
-function tapValue<T>(callback: (value: T) => void) {
-  return map((value: T) => {
-    callback(value);
-    return value;
-  });
 }
