@@ -1,6 +1,8 @@
 export const APP_ROUTES = {
   home: '/home',
   homeProducts: '/home',
+  storefrontCategory: (slug: string) => `/home/category/${slug}`,
+  storefrontBrand: (slug: string) => `/home/brand/${slug}`,
   dashboard: '/admin/dashboard',
   users: '/admin/management/users',
   roles: '/admin/management/roles',

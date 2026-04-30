@@ -10,6 +10,8 @@ export const publicRoutes: Routes = [
     children: [
       { path: '', component: PublicProductsPage },
       { path: 'products', pathMatch: 'full', redirectTo: '' },
+      { path: 'category/:categorySlug', component: PublicProductsPage },
+      { path: 'brand/:brandSlug', component: PublicProductsPage },
       { path: 'dashboard', component: DashboardPage },
     ],
   },

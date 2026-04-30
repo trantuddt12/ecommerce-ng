@@ -3,10 +3,16 @@ import { map, Observable } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
-import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, ProductFilter, ProductImage } from '../models/catalog.models';
+import { AdminProductDetail, AdminProductListItem, AdminProductUpsertRequest, Brand, Category, ProductFilter, ProductImage } from '../models/catalog.models';
 import { QueryParamValue } from '../utils/query-params.util';
 
 export type ProductStatusValue = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+
+export interface StorefrontCatalog {
+  categories: Category[];
+  brands: Brand[];
+  featuredProducts: AdminProductListItem[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProductApiService {
@@ -20,6 +26,18 @@ export class ProductApiService {
 
   storefront(filters?: ProductFilter): Observable<AdminProductListItem[]> {
     return this.baseApi.get<AdminProductListItem[] | ApiEnvelope<AdminProductListItem[]>>(API_ENDPOINTS.product.storefront, this.toQueryParams(filters)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  storefrontCatalog(featuredLimit = 12): Observable<StorefrontCatalog> {
+    return this.baseApi.get<StorefrontCatalog | ApiEnvelope<StorefrontCatalog>>(API_ENDPOINTS.product.storefrontCatalog, { featuredLimit }).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  getStorefrontById(id: number): Observable<AdminProductDetail> {
+    return this.baseApi.get<AdminProductDetail | ApiEnvelope<AdminProductDetail>>(API_ENDPOINTS.product.storefrontById(id)).pipe(
       map((response) => unwrapApiEnvelope(response)),
     );
   }

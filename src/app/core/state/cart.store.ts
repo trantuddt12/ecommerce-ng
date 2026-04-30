@@ -28,6 +28,10 @@ export class CartStore {
 
   constructor() {
     effect(() => {
+      if (!this.authStore.authInitialized()) {
+        return;
+      }
+
       if (this.authStore.isAuthenticated()) {
         if (!this.cartLoaded()) {
           this.loadCart().subscribe({

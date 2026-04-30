@@ -50,6 +50,24 @@ export class CategoryApiService {
     );
   }
 
+  storefront(filters?: Record<string, QueryParamValue>): Observable<Category[]> {
+    return this.baseApi.get<Category[] | ApiEnvelope<Category[]>>(API_ENDPOINTS.category.storefront, filters).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  storefrontTree(filters?: Record<string, string | number | boolean | null | undefined>): Observable<CategoryTreeNode[]> {
+    return this.baseApi.get<CategoryTreeNode[] | ApiEnvelope<CategoryTreeNode[]>>(API_ENDPOINTS.category.storefrontTree, filters).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  getStorefrontBySlug(slug: string): Observable<Category> {
+    return this.baseApi.get<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.storefrontBySlug(slug)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
   getById(id: number): Observable<Category> {
     return this.baseApi.get<Category | ApiEnvelope<Category>>(API_ENDPOINTS.category.byId(id)).pipe(
       map((response) => unwrapApiEnvelope(response)),

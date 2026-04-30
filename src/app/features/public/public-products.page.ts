@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -120,6 +120,9 @@ import { ProductApiService } from '../../core/services/product-api.service';
                         }
                       </span>
                       <span>{{ category.name }}</span>
+                      @if (categoryCountById().get(category.id); as productCount) {
+                        <small class="home-category-count">{{ productCount }}</small>
+                      }
                     </button>
 
                     @if (visibleCategoryChildren(category).length && hoveredCategoryId() === category.id) {
@@ -157,8 +160,8 @@ import { ProductApiService } from '../../core/services/product-api.service';
                   <h2>{{ selectedCategoryLabel() }}</h2>
                   <p>{{ resultsDescription() }}</p>
                 </div>
-                @if (selectedBrandId() !== null) {
-                  <button class="home-clear-button" type="button" (click)="selectedBrandId.set(null)">Bỏ brand</button>
+                @if (selectedBrandId() !== null || selectedCategoryId() !== null) {
+                  <button class="home-clear-button" type="button" (click)="clearCategoryFilter()">Xóa storefront filter</button>
                 }
               </div>
 
@@ -218,7 +221,14 @@ import { ProductApiService } from '../../core/services/product-api.service';
                     </div>
 
                     <div class="home-product-meta">
-                      <p>{{ product.categoryName || 'Danh mục điện máy' }}</p>
+                      <div class="home-product-badges">
+                        @if (product.brandName) {
+                          <button class="home-link-badge" type="button" (click)="goToBrand(product.brandId)">{{ product.brandName }}</button>
+                        }
+                        @if (product.categoryName) {
+                          <button class="home-link-badge" type="button" (click)="goToCategory(product.categoryId)">{{ product.categoryName }}</button>
+                        }
+                      </div>
                       <h3 class="home-product-title">{{ productDisplayName(product) }}</h3>
                       <strong class="home-product-price">{{ formatCurrency(product.price) }}</strong>
                       <div class="home-product-inventory">{{ inventoryLabel(product) }}</div>
@@ -457,6 +467,13 @@ import { ProductApiService } from '../../core/services/product-api.service';
       object-fit: cover;
     }
 
+    .home-category-count {
+      margin-left: auto;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     .home-content {
       display: grid;
       gap: 20px;
@@ -532,6 +549,23 @@ import { ProductApiService } from '../../core/services/product-api.service';
       display: grid;
       gap: 8px;
       padding: 16px;
+    }
+
+    .home-product-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .home-link-badge {
+      border: 0;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
     .home-product-meta p,
@@ -615,6 +649,7 @@ export class PublicProductsPage implements OnInit {
     || this.authStore.roles().includes('STAFF')
     || this.authStore.permissions().size > 0);
   protected readonly categoryById = computed(() => new Map(this.categories().map((category) => [category.id, category])));
+  protected readonly categoryCountById = computed(() => new Map(this.categories().map((category) => [category.id, category.productCount ?? null])));
   protected readonly categoryTreeById = computed(() => new Map(this.flattenCategoryTree(this.categoryTree()).map((category) => [category.id, category])));
   protected readonly selectedCategoryScopeIds = computed(() => {
     const selectedId = this.selectedCategoryId();
@@ -630,6 +665,11 @@ export class PublicProductsPage implements OnInit {
     return new Set(this.flattenCategoryTree([selectedNode]).map((category) => category.id));
   });
   protected readonly selectedCategoryLabel = computed(() => {
+    const selectedBrand = this.selectedBrandId() === null ? null : this.brands().find((brand) => brand.id === this.selectedBrandId());
+    if (selectedBrand?.name) {
+      return `Thương hiệu ${selectedBrand.name}`;
+    }
+
     const selectedId = this.selectedCategoryId();
     if (selectedId === null) {
       return 'Tất cả sản phẩm';
@@ -640,7 +680,6 @@ export class PublicProductsPage implements OnInit {
   protected readonly filteredProducts = computed(() => {
     const keyword = this.searchKeyword().trim().toLowerCase();
     const selectedCategoryIds = this.selectedCategoryScopeIds();
-    const products = this.products();
     return this.products().filter((product) => {
       const matchesKeyword = !keyword
         || product.name.toLowerCase().includes(keyword)
@@ -656,8 +695,13 @@ export class PublicProductsPage implements OnInit {
   protected readonly resultsDescription = computed(() => {
     const count = this.filteredProducts().length;
     const keyword = this.searchKeyword().trim();
+    const selectedBrand = this.selectedBrandId() === null ? null : this.brands().find((brand) => brand.id === this.selectedBrandId());
     if (keyword) {
       return `Có ${count} sản phẩm khớp với từ khóa "${keyword}".`;
+    }
+
+    if (selectedBrand?.name) {
+      return `Hiển thị ${count} sản phẩm của thương hiệu ${selectedBrand.name}.`;
     }
 
     return `Hiển thị ${count} sản phẩm theo bộ lọc hiện tại.`;
@@ -669,49 +713,81 @@ export class PublicProductsPage implements OnInit {
   private readonly cartApi = inject(CartApiService);
   private readonly notificationService = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
 
   ngOnInit(): void {
-    this.loadHomepageData();
+    this.route.paramMap.subscribe((params) => {
+      this.loadHomepageData(params.get('categorySlug'), params.get('brandSlug'));
+    });
   }
 
-  loadHomepageData(): void {
+  loadHomepageData(categorySlug?: string | null, brandSlug?: string | null): void {
     this.loading.set(true);
     this.errorMessage.set(null);
 
     forkJoin({
+      catalog: this.productApi.storefrontCatalog(24).pipe(
+        catchError(() => of({ categories: [] as Category[], brands: [] as Brand[], featuredProducts: [] as AdminProductListItem[] })),
+      ),
+      categoryDetail: categorySlug
+        ? this.categoryApi.getStorefrontBySlug(categorySlug).pipe(catchError(() => of(null)))
+        : of(null),
+      brandDetail: brandSlug
+        ? this.brandApi.getStorefrontBySlug(brandSlug).pipe(catchError(() => of(null)))
+        : of(null),
       products: this.productApi.storefront().pipe(
         catchError(() => this.productApi.list({ status: 'ACTIVE' }).pipe(
           catchError(() => of([] as AdminProductListItem[])),
         )),
       ),
-      categories: this.categoryApi.list({ status: 'ACTIVE', visible: true }).pipe(
-        catchError(() => of([] as Category[])),
+      categories: this.categoryApi.storefront().pipe(
+        catchError(() => this.categoryApi.list({ status: 'ACTIVE', visible: true }).pipe(
+          catchError(() => of([] as Category[])),
+        )),
       ),
-      categoryTree: this.categoryApi.tree({ status: 'ACTIVE', visibleOnly: true }).pipe(
-        catchError(() => of([] as CategoryTreeNode[])),
+      categoryTree: this.categoryApi.storefrontTree().pipe(
+        catchError(() => this.categoryApi.tree({ status: 'ACTIVE', visibleOnly: true }).pipe(
+          catchError(() => of([] as CategoryTreeNode[])),
+        )),
       ),
-      brands: this.brandApi.list().pipe(
-        catchError(() => of([] as Brand[])),
+      brands: this.brandApi.storefront().pipe(
+        catchError(() => this.brandApi.list().pipe(
+          catchError(() => of([] as Brand[])),
+        )),
       ),
     }).pipe(
       finalize(() => this.loading.set(false)),
     ).subscribe({
-      next: ({ products, categories, categoryTree, brands }) => {
-        const visibleProducts = products
+      next: ({ catalog, categoryDetail, brandDetail, products, categories, categoryTree, brands }) => {
+        const storefrontProducts = catalog.featuredProducts.length ? catalog.featuredProducts : products;
+        const storefrontCategories = catalog.categories.length ? catalog.categories : categories;
+        const storefrontBrands = catalog.brands.length ? catalog.brands : brands;
+        const visibleProducts = storefrontProducts
           .filter((product) => product.visibility !== 'HIDDEN')
           .map((product) => this.normalizeProduct(product));
-        const visibleCategories = this.normalizeVisibleCategories(categories);
+        const visibleCategories = this.normalizeVisibleCategories(storefrontCategories);
         const normalizedTree = this.normalizeCategoryTree(categoryTree);
         const fallbackTree = normalizedTree.length ? normalizedTree : this.buildCategoryTreeFromList(visibleCategories);
-        const visibleBrands = brands.filter((brand) => !brand.generic);
+        const visibleBrands = storefrontBrands.filter((brand) => !brand.generic);
+        const selectedCategory = categoryDetail ?? null;
+        const selectedBrand = brandDetail ?? null;
 
         this.products.set(visibleProducts);
         this.categories.set(visibleCategories);
         this.categoryTree.set(fallbackTree);
         this.brands.set(visibleBrands.slice(0, 12));
+        this.selectedCategoryId.set(selectedCategory?.id ?? null);
+        this.selectedBrandId.set(selectedBrand?.id ?? null);
+        this.hoveredCategoryId.set(null);
+        if (categorySlug && !selectedCategory) {
+          this.errorMessage.set('Không tìm thấy category storefront yêu cầu.');
+        }
+        if (brandSlug && !selectedBrand) {
+          this.errorMessage.set('Không tìm thấy brand storefront yêu cầu.');
+        }
       },
       error: (error) => {
         this.errorMessage.set(this.errorMapper.map(error).message);
@@ -721,15 +797,53 @@ export class PublicProductsPage implements OnInit {
 
   clearCategoryFilter(): void {
     this.selectedCategoryId.set(null);
+    this.selectedBrandId.set(null);
     this.hoveredCategoryId.set(null);
+    void this.router.navigate([APP_ROUTES.homeProducts]);
   }
 
   selectCategory(categoryId: number): void {
+    const category = this.categoryById().get(categoryId) || this.categoryTreeById().get(categoryId);
+    this.selectedBrandId.set(null);
     this.selectedCategoryId.set(categoryId);
+    if (category?.slug) {
+      void this.router.navigate([APP_ROUTES.storefrontCategory(category.slug)]);
+    }
   }
 
   toggleBrand(brandId: number): void {
-    this.selectedBrandId.set(this.selectedBrandId() === brandId ? null : brandId);
+    if (this.selectedBrandId() === brandId) {
+      this.selectedBrandId.set(null);
+      void this.router.navigate([APP_ROUTES.homeProducts]);
+      return;
+    }
+
+    const brand = this.brands().find((item) => item.id === brandId);
+    this.selectedCategoryId.set(null);
+    this.selectedBrandId.set(brandId);
+    if (brand?.slug) {
+      void this.router.navigate([APP_ROUTES.storefrontBrand(brand.slug)]);
+    }
+  }
+
+  goToCategory(categoryId: number): void {
+    const category = this.categoryById().get(categoryId) || this.categoryTreeById().get(categoryId);
+    if (!category?.slug) {
+      return;
+    }
+    this.selectedBrandId.set(null);
+    this.selectedCategoryId.set(categoryId);
+    void this.router.navigate([APP_ROUTES.storefrontCategory(category.slug)]);
+  }
+
+  goToBrand(brandId: number): void {
+    const brand = this.brands().find((item) => item.id === brandId);
+    if (!brand?.slug) {
+      return;
+    }
+    this.selectedCategoryId.set(null);
+    this.selectedBrandId.set(brandId);
+    void this.router.navigate([APP_ROUTES.storefrontBrand(brand.slug)]);
   }
 
   addToCart(product: AdminProductListItem): void {
@@ -865,7 +979,7 @@ export class PublicProductsPage implements OnInit {
       this.buyingProductId.set(product.id);
     }
 
-    this.productApi.getById(product.id).pipe(
+    this.productApi.getStorefrontById(product.id).pipe(
       finalize(() => {
         if (action === 'add') {
           this.addingProductId.set(null);

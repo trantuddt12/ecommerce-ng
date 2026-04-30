@@ -15,6 +15,18 @@ export class BrandApiService {
     );
   }
 
+  storefront(): Observable<Brand[]> {
+    return this.baseApi.get<Brand[] | ApiEnvelope<Brand[]>>(API_ENDPOINTS.brand.storefront).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
+  getStorefrontBySlug(slug: string): Observable<Brand> {
+    return this.baseApi.get<Brand | ApiEnvelope<Brand>>(API_ENDPOINTS.brand.storefrontBySlug(slug)).pipe(
+      map((response) => unwrapApiEnvelope(response)),
+    );
+  }
+
   create(request: BrandCreateRequest): Observable<Brand> {
     return this.baseApi.post<Brand | ApiEnvelope<Brand>>(API_ENDPOINTS.brand.create, request).pipe(
       map((response) => unwrapApiEnvelope(response)),

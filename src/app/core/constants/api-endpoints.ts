@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
   },
   brand: {
     list: '/brands',
+    storefront: '/brands/storefront',
+    storefrontBySlug: (slug: string) => `/brands/storefront/by-slug/${slug}`,
     create: '/brands',
     update: (id: string | number) => `/brands/update/${id}`,
     byId: (id: string | number) => `/brands/${id}`,
@@ -44,6 +46,9 @@ export const API_ENDPOINTS = {
   },
   category: {
     list: '/categories',
+    storefront: '/categories/storefront',
+    storefrontTree: '/categories/storefront/tree',
+    storefrontBySlug: (slug: string) => `/categories/storefront/by-slug/${slug}`,
     tree: '/categories/tree',
     create: '/categories',
     byId: (id: string | number) => `/categories/${id}`,
@@ -63,6 +68,8 @@ export const API_ENDPOINTS = {
   product: {
     list: '/products',
     storefront: '/products/storefront',
+    storefrontCatalog: '/products/storefront/catalog',
+    storefrontById: (id: string | number) => `/products/storefront/${id}`,
     create: '/products',
     byId: (id: string | number) => `/products/${id}`,
     update: (id: string | number) => `/products/${id}`,
