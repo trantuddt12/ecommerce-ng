@@ -211,13 +211,54 @@ import { ProductApiService } from '../../core/services/product-api.service';
               <div class="home-product-grid">
                 @for (product of featuredProducts(); track product.id) {
                   <article class="home-product-card">
-                    <div class="home-product-media">
-                      @if (resolveProductImageUrl(product); as imageUrl) {
-                        <img [src]="imageUrl" [alt]="productDisplayName(product)" />
-                      } @else {
-                        <div class="home-product-placeholder">{{ productInitial(product) }}</div>
+                    <div class="home-product-media-shell">
+                      <button class="home-product-media-button" type="button" (click)="viewProductDetail(product.id)">
+                        <div class="home-product-media">
+                          @if (activeProductImageUrl(product); as imageUrl) {
+                            <img [src]="imageUrl" [alt]="productDisplayName(product)" />
+                          } @else {
+                            <div class="home-product-placeholder">{{ productInitial(product) }}</div>
+                          }
+
+                          <span class="home-status-chip">{{ isPurchasable(product) ? 'Mua ngay' : 'Sắp về hàng' }}</span>
+
+                          @if (productGalleryCount(product) > 1) {
+                            <button
+                              class="home-gallery-nav home-gallery-nav-prev"
+                              type="button"
+                              (click)="$event.stopPropagation(); showPreviousProductImage(product.id)"
+                              [attr.aria-label]="'Ảnh trước của ' + productDisplayName(product)"
+                            >
+                              <mat-icon fontSet="material-symbols-outlined">chevron_left</mat-icon>
+                            </button>
+                            <button
+                              class="home-gallery-nav home-gallery-nav-next"
+                              type="button"
+                              (click)="$event.stopPropagation(); showNextProductImage(product.id)"
+                              [attr.aria-label]="'Ảnh tiếp theo của ' + productDisplayName(product)"
+                            >
+                              <mat-icon fontSet="material-symbols-outlined">chevron_right</mat-icon>
+                            </button>
+                            <div class="home-gallery-count">{{ activeProductImageIndex(product) + 1 }}/{{ productGalleryCount(product) }}</div>
+                          }
+                        </div>
+                      </button>
+
+                      @if (productGalleryImages(product).length > 1) {
+                        <div class="home-product-thumbnails" [attr.aria-label]="'Bộ ảnh của ' + productDisplayName(product)">
+                          @for (imageUrl of productGalleryImages(product); track imageUrl; let index = $index) {
+                            <button
+                              class="home-product-thumbnail"
+                              type="button"
+                              [class.active]="activeProductImageIndex(product) === index"
+                              [attr.aria-label]="'Xem ảnh ' + (index + 1) + ' của ' + productDisplayName(product)"
+                              (click)="selectProductImage(product.id, index)"
+                            >
+                              <img [src]="imageUrl" [alt]="productDisplayName(product) + ' ảnh ' + (index + 1)" />
+                            </button>
+                          }
+                        </div>
                       }
-                      <span class="home-status-chip">{{ isPurchasable(product) ? 'Mua ngay' : 'Sắp về hàng' }}</span>
                     </div>
 
                     <div class="home-product-meta">
@@ -229,7 +270,9 @@ import { ProductApiService } from '../../core/services/product-api.service';
                           <button class="home-link-badge" type="button" (click)="goToCategory(product.categoryId)">{{ product.categoryName }}</button>
                         }
                       </div>
-                      <h3 class="home-product-title">{{ productDisplayName(product) }}</h3>
+                      <button class="home-product-title-button" type="button" (click)="viewProductDetail(product.id)">
+                        <h3 class="home-product-title">{{ productDisplayName(product) }}</h3>
+                      </button>
                       <strong class="home-product-price">{{ formatCurrency(product.price) }}</strong>
                       <div class="home-product-inventory">{{ inventoryLabel(product) }}</div>
                       @if (product.lowStockMessage) {
@@ -238,6 +281,14 @@ import { ProductApiService } from '../../core/services/product-api.service';
                     </div>
 
                     <div class="home-product-actions">
+                      <button
+                        mat-button
+                        color="primary"
+                        type="button"
+                        (click)="viewProductDetail(product.id)"
+                      >
+                        Xem chi tiết
+                      </button>
                       <button
                         mat-stroked-button
                         type="button"
@@ -515,12 +566,31 @@ import { ProductApiService } from '../../core/services/product-api.service';
     .home-product-card {
       display: grid;
       overflow: hidden;
+      padding: 14px;
+      gap: 14px;
+    }
+
+    .home-product-media-shell {
+      display: grid;
+      gap: 10px;
+    }
+
+    .home-product-media-button,
+    .home-product-title-button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
     }
 
     .home-product-media {
       position: relative;
       aspect-ratio: 1;
-      background: #f8fafc;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
     }
 
     .home-product-placeholder {
@@ -531,6 +601,81 @@ import { ProductApiService } from '../../core/services/product-api.service';
       font-size: 48px;
       font-weight: 700;
       color: #94a3b8;
+    }
+
+    .home-product-thumbnails {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .home-product-thumbnail,
+    .home-gallery-nav {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .home-product-thumbnail {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      background: #f8fafc;
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .home-product-thumbnail.active {
+      border-color: #2563eb;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .home-product-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .home-gallery-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.68);
+      color: #fff;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .home-gallery-nav:hover {
+      background: rgba(29, 78, 216, 0.9);
+      transform: translateY(-50%) scale(1.04);
+    }
+
+    .home-gallery-nav-prev {
+      left: 12px;
+    }
+
+    .home-gallery-nav-next {
+      right: 12px;
+    }
+
+    .home-gallery-count {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.72);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
     }
 
     .home-status-chip {
@@ -548,7 +693,7 @@ import { ProductApiService } from '../../core/services/product-api.service';
     .home-product-meta {
       display: grid;
       gap: 8px;
-      padding: 16px;
+      padding: 2px;
     }
 
     .home-product-badges {
@@ -571,6 +716,14 @@ import { ProductApiService } from '../../core/services/product-api.service';
     .home-product-meta p,
     .home-product-title {
       margin: 0;
+    }
+
+    .home-product-title-button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
     }
 
     .home-product-meta p {
@@ -599,7 +752,7 @@ import { ProductApiService } from '../../core/services/product-api.service';
     }
 
     .home-product-actions {
-      padding: 0 16px 16px;
+      padding: 0 2px 2px;
     }
 
     .home-error,
@@ -627,6 +780,29 @@ import { ProductApiService } from '../../core/services/product-api.service';
       .home-sidebar {
         position: static;
       }
+
+      .home-product-thumbnails {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .home-page {
+        padding: 16px;
+      }
+
+      .home-product-card {
+        padding: 12px;
+      }
+
+      .home-product-thumbnails {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .home-gallery-nav {
+        width: 34px;
+        height: 34px;
+      }
     }
   `],
 })
@@ -645,6 +821,7 @@ export class PublicProductsPage implements OnInit {
   protected readonly selectedBrandId = signal<number | null>(null);
   protected readonly hoveredCategoryId = signal<number | null>(null);
   protected readonly searchKeyword = signal('');
+  protected readonly activeImageIndexByProductId = signal<Record<number, number>>({});
   protected readonly canAccessAdmin = computed(() => this.authStore.roles().includes('ADMIN')
     || this.authStore.roles().includes('STAFF')
     || this.authStore.permissions().size > 0);
@@ -846,6 +1023,10 @@ export class PublicProductsPage implements OnInit {
     void this.router.navigate([APP_ROUTES.storefrontBrand(brand.slug)]);
   }
 
+  viewProductDetail(productId: number): void {
+    void this.router.navigate([APP_ROUTES.storefrontProductDetail(productId)]);
+  }
+
   addToCart(product: AdminProductListItem): void {
     this.executeCartAction(product, 'add');
   }
@@ -891,7 +1072,80 @@ export class PublicProductsPage implements OnInit {
   }
 
   resolveProductImageUrl(product: AdminProductListItem): string | null {
-    return resolveMediaUrl(product.thumbnailUrl || product.images[0]?.url || null, this.config.apiBaseUrl);
+    return this.productGalleryImages(product)[0] ?? null;
+  }
+
+  productGalleryImages(product: AdminProductListItem): string[] {
+    const resolvedImages = product.images
+      .map((image) => resolveMediaUrl(image.url, this.config.apiBaseUrl))
+      .filter((imageUrl): imageUrl is string => !!imageUrl);
+    const fallbackThumbnail = resolveMediaUrl(product.thumbnailUrl || null, this.config.apiBaseUrl);
+
+    if (fallbackThumbnail && !resolvedImages.includes(fallbackThumbnail)) {
+      resolvedImages.unshift(fallbackThumbnail);
+    }
+
+    return resolvedImages;
+  }
+
+  productGalleryCount(product: AdminProductListItem): number {
+    return this.productGalleryImages(product).length;
+  }
+
+  activeProductImageIndex(product: AdminProductListItem): number {
+    const total = this.productGalleryCount(product);
+    if (!total) {
+      return 0;
+    }
+
+    const currentIndex = this.activeImageIndexByProductId()[product.id] ?? 0;
+    return Math.min(Math.max(currentIndex, 0), total - 1);
+  }
+
+  activeProductImageUrl(product: AdminProductListItem): string | null {
+    const images = this.productGalleryImages(product);
+    if (!images.length) {
+      return null;
+    }
+
+    return images[this.activeProductImageIndex(product)] ?? images[0];
+  }
+
+  selectProductImage(productId: number, imageIndex: number): void {
+    this.activeImageIndexByProductId.update((current) => ({
+      ...current,
+      [productId]: imageIndex,
+    }));
+  }
+
+  showPreviousProductImage(productId: number): void {
+    const product = this.products().find((item) => item.id === productId);
+    if (!product) {
+      return;
+    }
+
+    const total = this.productGalleryCount(product);
+    if (total <= 1) {
+      return;
+    }
+
+    const currentIndex = this.activeProductImageIndex(product);
+    this.selectProductImage(productId, (currentIndex - 1 + total) % total);
+  }
+
+  showNextProductImage(productId: number): void {
+    const product = this.products().find((item) => item.id === productId);
+    if (!product) {
+      return;
+    }
+
+    const total = this.productGalleryCount(product);
+    if (total <= 1) {
+      return;
+    }
+
+    const currentIndex = this.activeProductImageIndex(product);
+    this.selectProductImage(productId, (currentIndex + 1) % total);
   }
 
   resolveCategoryIconUrl(category: CategoryTreeNode): string | null {

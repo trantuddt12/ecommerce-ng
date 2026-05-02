@@ -3,6 +3,7 @@ export const APP_ROUTES = {
   homeProducts: '/home',
   storefrontCategory: (slug: string) => `/home/category/${slug}`,
   storefrontBrand: (slug: string) => `/home/brand/${slug}`,
+  storefrontProductDetail: (id: string | number) => `/home/products/${id}`,
   dashboard: '/admin/dashboard',
   users: '/admin/management/users',
   roles: '/admin/management/roles',
