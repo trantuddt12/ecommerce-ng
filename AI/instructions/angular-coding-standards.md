@@ -26,6 +26,7 @@ Day la bo quy tac de AI hoac lap trinh vien sua code trong repo nay ma khong lam
 - Uu tien `signal` va `computed` cho auth state nhu codebase dang dung.
 - Service API nen di qua `BaseApiService` thay vi goi `HttpClient` truc tiep neu khong co ly do dac biet.
 - Endpoint moi nen them vao `API_ENDPOINTS`.
+- Moi thay doi frontend lien quan API (them, xoa, doi endpoint, doi method, doi query/body, doi response mapping, doi service caller) bat buoc cap nhat `AI/references/api-inventory.md` trong cung task.
 - Route moi nen can nhac them vao `APP_ROUTES` neu duoc navigate lap lai.
 - Khong tao utility moi neu chi dung mot lan va logic van de doc trong file hien tai.
 
