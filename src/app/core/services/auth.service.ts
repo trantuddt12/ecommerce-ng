@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import {
   ApiEnvelope,
+  EmailVerificationResponse,
   ForgotPasswordConfirmRequest,
   LoginRequest,
   LoginResponse,
@@ -49,10 +50,6 @@ export class AuthService {
 
   register(payload: RegisterRequest) {
     return this.api.post<ApiEnvelope<UserResponse>>(API_ENDPOINTS.user.register, payload);
-  }
-
-  registerWithOtp(payload: RegisterRequest) {
-    return this.api.post<ApiEnvelope<SendOtpResponse>>(API_ENDPOINTS.auth.sendOtpRegister, payload).pipe(map((response) => response.data));
   }
 
   loginWithGoogle(googleToken: string) {
@@ -115,6 +112,10 @@ export class AuthService {
 
   verifyOtp(payload: VerifyOtpRequest) {
     return this.api.post<ApiEnvelope<VerifyOtpResponse>>(API_ENDPOINTS.auth.verifyOtp, payload).pipe(map((response) => response.data));
+  }
+
+  verifyEmail(token: string) {
+    return this.api.get<ApiEnvelope<EmailVerificationResponse>>(API_ENDPOINTS.auth.verifyEmail, { token }).pipe(map((response) => response.data));
   }
 
   completeOtpLogin(response: VerifyOtpResponse) {

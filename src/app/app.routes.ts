@@ -6,6 +6,7 @@ import { ForgotPasswordPage } from './features/auth/pages/forgot-password.page';
 import { LoginPage } from './features/auth/pages/login.page';
 import { RegisterPage } from './features/auth/pages/register.page';
 import { ResetPasswordPage } from './features/auth/pages/reset-password.page';
+import { VerifyEmailPage } from './features/auth/pages/verify-email.page';
 import { VerifyOtpPage } from './features/auth/pages/verify-otp.page';
 import { PublicProductsPage } from './features/public/public-products.page';
 import { ForbiddenPage } from './features/system/forbidden.page';
@@ -34,6 +35,7 @@ export const routes: Routes = [
     children: [
       { path: 'login', component: LoginPage },
       { path: 'register', component: RegisterPage },
+      { path: 'verify-email', component: VerifyEmailPage },
       { path: 'verify-otp', component: VerifyOtpPage },
       { path: 'forgot-password', component: ForgotPasswordPage },
       { path: 'reset-password', component: ResetPasswordPage },

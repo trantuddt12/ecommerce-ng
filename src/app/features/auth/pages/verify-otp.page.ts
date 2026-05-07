@@ -55,26 +55,33 @@ import { PostLoginRouteService } from '../../../core/services/post-login-route.s
             <input matInput type="text" [value]="purposeLabel()" readonly />
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>OTP</mat-label>
-            <input matInput type="text" formControlName="otp" placeholder="Nhap ma gom 6 chu so" />
-          </mat-form-field>
+          @if (isRegisterEmailVerificationFlow()) {
+            <div class="auth-inline-note auth-inline-note--success">
+              <p>Dang ky bang email verification da duoc go bo.</p>
+              <p>Vui long quay lai form dang ky va tao tai khoan truc tiep.</p>
+            </div>
+          } @else {
+            <mat-form-field appearance="outline">
+              <mat-label>OTP</mat-label>
+              <input matInput type="text" formControlName="otp" placeholder="Nhap ma gom 6 chu so" />
+            </mat-form-field>
 
-          <div class="auth-actions">
-            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting() || blocked() || !hasFlowContext()">Xac thuc OTP</button>
-            <button mat-stroked-button type="button" [disabled]="!canResend() || submitting() || blocked() || !hasFlowContext()" (click)="resendOtp()">Gui lai OTP</button>
-          </div>
+            <div class="auth-actions">
+              <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting() || blocked() || !hasFlowContext()">Xac thuc OTP</button>
+              <button mat-stroked-button type="button" [disabled]="!canResend() || submitting() || blocked() || !hasFlowContext()" (click)="resendOtp()">Gui lai OTP</button>
+            </div>
 
-          @if (countdown() > 0) {
-            <p class="auth-helper">Ban co the gui lai ma sau {{ countdown() }} giay.</p>
-          }
+            @if (countdown() > 0) {
+              <p class="auth-helper">Ban co the gui lai ma sau {{ countdown() }} giay.</p>
+            }
 
-          @if (remainingAttempts() !== null) {
-            <p class="auth-helper auth-helper--warning">So lan thu con lai: {{ remainingAttempts() }}</p>
-          }
+            @if (remainingAttempts() !== null) {
+              <p class="auth-helper auth-helper--warning">So lan thu con lai: {{ remainingAttempts() }}</p>
+            }
 
-          @if (blocked()) {
-            <p class="auth-helper auth-helper--warning">OTP tam thoi bi khoa. Vui long thu lai sau {{ countdown() }} giay.</p>
+            @if (blocked()) {
+              <p class="auth-helper auth-helper--warning">OTP tam thoi bi khoa. Vui long thu lai sau {{ countdown() }} giay.</p>
+            }
           }
 
           <div class="auth-links">
@@ -102,6 +109,11 @@ import { PostLoginRouteService } from '../../../core/services/post-login-route.s
       border-color: rgba(245, 158, 11, 0.35);
       background: rgba(255, 251, 235, 0.96);
       color: #92400e;
+    }
+    .auth-inline-note--success {
+      border-color: rgba(34, 197, 94, 0.32);
+      background: rgba(240, 253, 244, 0.96);
+      color: #166534;
     }
     .auth-actions--stacked {
       grid-template-columns: 1fr;
@@ -152,6 +164,11 @@ export class VerifyOtpPage implements OnDestroy {
   }
 
   submit(): void {
+    if (this.isRegisterEmailVerificationFlow()) {
+      this.notifications.success('Vui long mo email va bam vao lien ket xac nhan de hoan tat dang ky.');
+      return;
+    }
+
     if (!this.hasFlowContext()) {
       this.notifications.error('Hay gui OTP tu trang dang ky hoac quen mat khau truoc khi xac thuc.');
       return;
@@ -213,6 +230,11 @@ export class VerifyOtpPage implements OnDestroy {
   }
 
   protected resendOtp(): void {
+    if (this.isRegisterEmailVerificationFlow()) {
+      this.notifications.error('Dang ky bang email verification da duoc go bo. Vui long quay lai form dang ky.');
+      return;
+    }
+
     if (!this.hasFlowContext()) {
       this.notifications.error('Hay bat dau tu buoc gui OTP truoc khi dung chuc nang gui lai ma.');
       return;
@@ -222,25 +244,6 @@ export class VerifyOtpPage implements OnDestroy {
     const purpose = this.form.controls.purpose.getRawValue();
 
     this.submitting.set(true);
-    if (purpose === 'REGISTER') {
-      const draft = this.getRegisterDraft();
-      if (!draft || draft.email !== email) {
-        this.submitting.set(false);
-        this.notifications.error('Khong tim thay du lieu dang ky de gui lai OTP. Vui long quay lai form dang ky.');
-        return;
-      }
-
-      this.authService.registerWithOtp(draft).subscribe({
-        next: (response) => {
-          this.startCountdown(response.resendAfterSeconds);
-          this.notifications.success('Da gui lai OTP dang ky.');
-        },
-        error: (error) => this.handleResendError(error),
-        complete: () => this.submitting.set(false),
-      });
-      return;
-    }
-
     this.authService.sendOtp({ email, purpose }).subscribe({
       next: (response) => {
         this.startCountdown(response.resendAfterSeconds);
@@ -259,19 +262,6 @@ export class VerifyOtpPage implements OnDestroy {
     this.notifications.error(mappedError.message);
   }
 
-  private getRegisterDraft(): RegisterRequest | null {
-    const raw = sessionStorage.getItem('auth.register-otp-draft');
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(raw) as RegisterRequest;
-    } catch {
-      return null;
-    }
-  }
-
   protected purposeLabel(): string {
     if (this.initialPurpose === 'FORGOT_PASSWORD') {
       return 'Quen mat khau';
@@ -282,6 +272,10 @@ export class VerifyOtpPage implements OnDestroy {
     return 'Dang ky tai khoan';
   }
 
+  protected isRegisterEmailVerificationFlow(): boolean {
+    return this.initialPurpose === 'REGISTER';
+  }
+
   protected helperText(): string {
     if (this.initialPurpose === 'LOGIN') {
       return 'Nhap ma OTP vua duoc gui toi email de dang nhap vao he thong.';
@@ -289,7 +283,7 @@ export class VerifyOtpPage implements OnDestroy {
 
     return this.initialPurpose === 'FORGOT_PASSWORD'
       ? 'Nhap ma OTP vua duoc gui toi email de tiep tuc dat lai mat khau.'
-      : 'Nhap ma OTP vua duoc gui toi email de hoan tat dang ky tai khoan.';
+      : 'Dang ky bang email verification da duoc go bo. Vui long quay lai form dang ky de tao tai khoan truc tiep.';
   }
 
   private startCountdown(seconds: number): void {

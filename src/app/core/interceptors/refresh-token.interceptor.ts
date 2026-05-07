@@ -16,8 +16,8 @@ export const refreshTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const isAuthRefreshRequest = request.url.includes(API_ENDPOINTS.auth.refresh);
   const isPublicAuthRequest = request.url.includes(API_ENDPOINTS.auth.login)
     || request.url.includes(API_ENDPOINTS.auth.sendOtp)
-    || request.url.includes(API_ENDPOINTS.auth.sendOtpRegister)
     || request.url.includes(API_ENDPOINTS.auth.verifyOtp)
+    || request.url.includes(API_ENDPOINTS.auth.verifyEmail)
     || request.url.includes(API_ENDPOINTS.auth.logout);
 
   if (isAuthRefreshRequest || isPublicAuthRequest) {

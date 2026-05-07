@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { AppConfig } from '../../../core/config/app-config.model';
-import { RegisterRequest, SendOtpResponse } from '../../../core/models/auth.models';
+import { RegisterRequest } from '../../../core/models/auth.models';
 import { APP_CONFIG } from '../../../core/tokens/app-config.token';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
@@ -60,7 +60,6 @@ declare global {
 
           <div class="auth-actions">
             <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">Tao tai khoan</button>
-            <button mat-stroked-button type="button" [disabled]="form.invalid || submitting()" (click)="submitWithOtp()">Dang ky bang OTP</button>
           </div>
 
           @if (showGoogleLogin()) {
@@ -131,47 +130,6 @@ export class RegisterPage implements AfterViewInit, OnDestroy {
       },
       error: (error) => this.notifications.error(this.errorMapper.map(error).message),
       complete: () => this.submitting.set(false),
-    });
-  }
-
-  submitWithOtp(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.submitting.set(true);
-    const payload: RegisterRequest = this.form.getRawValue();
-    this.authService.registerWithOtp(payload).subscribe({
-      next: (response) => {
-        sessionStorage.setItem('auth.register-otp-draft', JSON.stringify(payload));
-        this.notifications.success('Da gui OTP dang ky. Vui long kiem tra email.');
-        this.navigateToVerifyOtp(response);
-      },
-      error: (error) => {
-        const mappedError = this.errorMapper.map(error);
-        if (mappedError.retryAfterSeconds) {
-          void this.router.navigate(['/auth/verify-otp'], {
-            queryParams: {
-              email: payload.email,
-              purpose: 'REGISTER',
-              resendAfterSeconds: mappedError.retryAfterSeconds,
-            },
-          });
-        }
-        this.notifications.error(mappedError.message);
-      },
-      complete: () => this.submitting.set(false),
-    });
-  }
-
-  private navigateToVerifyOtp(response: SendOtpResponse): void {
-    void this.router.navigate(['/auth/verify-otp'], {
-      queryParams: {
-        email: response.email,
-        purpose: response.purpose,
-        resendAfterSeconds: response.resendAfterSeconds,
-      },
     });
   }
 

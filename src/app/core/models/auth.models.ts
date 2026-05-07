@@ -58,6 +58,14 @@ export interface VerifyOtpResponse {
   refreshToken?: string;
 }
 
+export interface EmailVerificationResponse {
+  verified: boolean;
+  purpose: OtpPurpose;
+  nextAction: 'LOGIN_ALLOWED';
+  email: string;
+  message: string;
+}
+
 export interface ForgotPasswordConfirmRequest {
   email: string;
   newPassword: string;
