@@ -16,7 +16,7 @@ import { AuthStore } from '../../core/state/auth.store';
 import { APP_CONFIG } from '../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../core/utils/media-url.util';
 import { BrandApiService } from '../../core/services/brand-api.service';
-import { CartApiService } from '../../core/services/cart-api.service';
+import { CartStore } from '../../core/state/cart.store';
 import { CategoryApiService } from '../../core/services/category-api.service';
 import { ErrorMapperService } from '../../core/services/error-mapper.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -41,10 +41,9 @@ import { ProductApiService } from '../../core/services/product-api.service';
       <section class="home-hero">
         <div>
           <p class="home-eyebrow">Mua sắm điện máy</p>
-          <h1>Trang chủ gọn hơn, tập trung vào tìm kiếm và danh mục sản phẩm.</h1>
+          <h1>Mua sắm nhanh hơn với danh mục rõ ràng và sản phẩm nổi bật.</h1>
           <p class="home-description">
-            Tìm nhanh sản phẩm theo tên, chọn category để xem đúng danh sách đang quan tâm
-            và thêm ngay vào giỏ hàng.
+            Tìm sản phẩm theo tên, thương hiệu hoặc danh mục; xem tồn kho và đặt mua chỉ trong vài thao tác.
           </p>
         </div>
 
@@ -887,7 +886,7 @@ export class PublicProductsPage implements OnInit {
   private readonly productApi = inject(ProductApiService);
   private readonly categoryApi = inject(CategoryApiService);
   private readonly brandApi = inject(BrandApiService);
-  private readonly cartApi = inject(CartApiService);
+  private readonly cartStore = inject(CartStore);
   private readonly notificationService = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly route = inject(ActivatedRoute);
@@ -1071,10 +1070,6 @@ export class PublicProductsPage implements OnInit {
     return this.productDisplayName(product).trim().charAt(0).toUpperCase() || '#';
   }
 
-  resolveProductImageUrl(product: AdminProductListItem): string | null {
-    return this.productGalleryImages(product)[0] ?? null;
-  }
-
   productGalleryImages(product: AdminProductListItem): string[] {
     const resolvedImages = product.images
       .map((image) => resolveMediaUrl(image.url, this.config.apiBaseUrl))
@@ -1249,7 +1244,7 @@ export class PublicProductsPage implements OnInit {
           return;
         }
 
-        this.cartApi.upsertItem({ variantId: variant.id, quantity: 1 }).subscribe({
+        this.cartStore.upsertItem({ variantId: variant.id, quantity: 1 }).subscribe({
           next: () => {
             if (action === 'add') {
               this.notificationService.success(`Đã thêm ${this.productDisplayName(product)} vào giỏ hàng.`);
@@ -1270,21 +1265,6 @@ export class PublicProductsPage implements OnInit {
 
   flattenCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
     return nodes.flatMap((node) => [node, ...this.flattenCategoryTree(node.children)]);
-  }
-
-  findCategoryNode(nodes: CategoryTreeNode[], categoryId: number): CategoryTreeNode | null {
-    for (const node of nodes) {
-      if (node.id === categoryId) {
-        return node;
-      }
-
-      const child = this.findCategoryNode(node.children, categoryId);
-      if (child) {
-        return child;
-      }
-    }
-
-    return null;
   }
 
   categoryIcon(categoryName: string): string {

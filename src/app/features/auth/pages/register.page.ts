@@ -125,10 +125,13 @@ export class RegisterPage implements AfterViewInit, OnDestroy {
     this.submitting.set(true);
     this.authService.register(payload).subscribe({
       next: () => {
-        this.notifications.success('Dang ky thanh cong. Vui long dang nhap.');
+        this.notifications.success('Dang ky thanh cong. Vui long kiem tra email de kich hoat tai khoan.');
         void this.router.navigateByUrl('/auth/login');
       },
-      error: (error) => this.notifications.error(this.errorMapper.map(error).message),
+      error: (error) => {
+        this.submitting.set(false);
+        this.notifications.error(this.errorMapper.map(error).message);
+      },
       complete: () => this.submitting.set(false),
     });
   }

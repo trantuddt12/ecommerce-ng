@@ -14,7 +14,7 @@ import { AdminProductDetail, AdminProductVariant } from '../../core/models/catal
 import { AuthStore } from '../../core/state/auth.store';
 import { APP_CONFIG } from '../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../core/utils/media-url.util';
-import { CartApiService } from '../../core/services/cart-api.service';
+import { CartStore } from '../../core/state/cart.store';
 import { ErrorMapperService } from '../../core/services/error-mapper.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProductApiService } from '../../core/services/product-api.service';
@@ -513,7 +513,7 @@ export class PublicProductDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productApi = inject(ProductApiService);
-  private readonly cartApi = inject(CartApiService);
+  private readonly cartStore = inject(CartStore);
   private readonly notifications = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
 
@@ -636,7 +636,7 @@ export class PublicProductDetailPage {
       this.buyingNow.set(true);
     }
 
-    this.cartApi.upsertItem({ variantId: variant.id, quantity: 1 }).pipe(
+    this.cartStore.upsertItem({ variantId: variant.id, quantity: 1 }).pipe(
       finalize(() => {
         if (action === 'add') {
           this.addingToCart.set(false);

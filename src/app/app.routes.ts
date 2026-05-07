@@ -1,28 +1,20 @@
 import { Routes } from '@angular/router';
 import { guestGuard } from './core/guards/guest.guard';
 import { AuthLayoutComponent } from './core/layout/auth-layout.component';
-import { ClientLayoutComponent } from './core/layout/client-layout.component';
 import { ForgotPasswordPage } from './features/auth/pages/forgot-password.page';
 import { LoginPage } from './features/auth/pages/login.page';
 import { RegisterPage } from './features/auth/pages/register.page';
 import { ResetPasswordPage } from './features/auth/pages/reset-password.page';
 import { VerifyEmailPage } from './features/auth/pages/verify-email.page';
 import { VerifyOtpPage } from './features/auth/pages/verify-otp.page';
-import { PublicProductsPage } from './features/public/public-products.page';
 import { ForbiddenPage } from './features/system/forbidden.page';
 import { NotFoundPage } from './features/system/not-found.page';
 
 export const routes: Routes = [
   {
     path: '',
-    component: ClientLayoutComponent,
-    children: [
-      {
-        path: '',
-        pathMatch: 'full',
-        component: PublicProductsPage,
-      },
-    ],
+    pathMatch: 'full',
+    redirectTo: 'home',
   },
   {
     path: 'home',

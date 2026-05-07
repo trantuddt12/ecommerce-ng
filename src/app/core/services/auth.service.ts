@@ -49,7 +49,7 @@ export class AuthService {
   }
 
   register(payload: RegisterRequest) {
-    return this.api.post<ApiEnvelope<UserResponse>>(API_ENDPOINTS.user.register, payload);
+    return this.api.post<ApiEnvelope<UserResponse>>(API_ENDPOINTS.auth.register, payload).pipe(map((response) => response.data));
   }
 
   loginWithGoogle(googleToken: string) {

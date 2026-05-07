@@ -7,7 +7,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { OtpPurpose, RegisterRequest } from '../../../core/models/auth.models';
+import { OtpPurpose } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -39,7 +39,7 @@ import { PostLoginRouteService } from '../../../core/services/post-login-route.s
             </div>
 
             <div class="auth-actions auth-actions--stacked">
-              <a mat-flat-button color="primary" routerLink="/auth/register">Gui OTP dang ky</a>
+              <a mat-flat-button color="primary" routerLink="/auth/register">Dang ky tai khoan</a>
               <a mat-stroked-button routerLink="/auth/login">Gui OTP dang nhap</a>
               <a mat-stroked-button routerLink="/auth/forgot-password">Gui OTP quen mat khau</a>
             </div>
@@ -208,8 +208,7 @@ export class VerifyOtpPage implements OnDestroy {
           return;
         }
 
-        sessionStorage.removeItem('auth.register-otp-draft');
-        this.notifications.success('OTP hop le. Ban co the dang nhap.');
+        this.notifications.success('Xac thuc thanh cong. Ban co the tiep tuc.');
         void this.router.navigateByUrl('/auth/login');
       },
       error: (error) => {
@@ -244,6 +243,13 @@ export class VerifyOtpPage implements OnDestroy {
     const purpose = this.form.controls.purpose.getRawValue();
 
     this.submitting.set(true);
+    if (purpose === 'REGISTER') {
+      this.submitting.set(false);
+      this.notifications.error('Dang ky hien dung email kich hoat tai khoan, khong dung OTP. Vui long quay lai trang dang ky.');
+      void this.router.navigateByUrl('/auth/register');
+      return;
+    }
+
     this.authService.sendOtp({ email, purpose }).subscribe({
       next: (response) => {
         this.startCountdown(response.resendAfterSeconds);
