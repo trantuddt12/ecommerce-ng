@@ -67,10 +67,12 @@ import { CreatePaymentIntentRequest, PaymentIntent, PaymentStatus } from '../../
             <button mat-flat-button color="primary" type="button" (click)="createIntent()" [disabled]="loading() || !allowCreate()">Tao intent</button>
           }
           @if (intent()) {
-            <button mat-flat-button color="primary" type="button" (click)="authorize()" [disabled]="loading()">Authorize</button>
-            <button mat-flat-button color="primary" type="button" (click)="capture()" [disabled]="loading() || !canCapture()">Capture</button>
-            <button mat-stroked-button type="button" (click)="refund()" [disabled]="loading() || !canRefund()">Refund</button>
-            <button mat-stroked-button color="warn" type="button" (click)="voidPayment()" [disabled]="loading() || !canVoid()">Void</button>
+            <button mat-flat-button color="primary" type="button" (click)="authorize()" [disabled]="loading() || !canAuthorize()">Authorize</button>
+            @if (adminMode) {
+              <button mat-flat-button color="primary" type="button" (click)="capture()" [disabled]="loading() || !canCapture()">Capture</button>
+              <button mat-stroked-button type="button" (click)="refund()" [disabled]="loading() || !canRefund()">Refund</button>
+              <button mat-stroked-button color="warn" type="button" (click)="voidPayment()" [disabled]="loading() || !canVoid()">Void</button>
+            }
           }
           <button mat-stroked-button type="button" (click)="reload()" [disabled]="loading()">Reload</button>
         </div>
@@ -177,7 +179,7 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly intent = signal<PaymentIntent | null>(null);
-  protected provider = 'COD';
+  protected provider = 'VNPAY';
   protected amountInput = 0;
   protected refundInput = 0;
 
@@ -209,7 +211,11 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
     this.paymentApi.getByOrderId(this.orderId)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (intent: PaymentIntent) => {
+        next: (intent: PaymentIntent | null) => {
+          if (!intent) {
+            this.intent.set(null);
+            return;
+          }
           this.intent.set(intent);
           this.provider = intent.provider || this.provider;
           this.amountInput = intent.amount;
@@ -283,15 +289,19 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
   }
 
   protected canCapture(): boolean {
-    return !!this.intent() && this.intent()?.status === 'AUTHORIZED';
+    return this.adminMode && !!this.intent() && this.intent()?.status === 'AUTHORIZED';
   }
 
   protected canRefund(): boolean {
-    return !!this.intent() && ['CAPTURED', 'PARTIALLY_REFUNDED', 'SETTLED'].includes(this.intent()!.status as PaymentStatus);
+    return this.adminMode && !!this.intent() && ['CAPTURED', 'SETTLED'].includes(this.intent()!.status as PaymentStatus);
   }
 
   protected canVoid(): boolean {
-    return !!this.intent() && ['CREATED', 'AUTHORIZING', 'AUTHORIZED', 'PENDING'].includes(this.intent()!.status as PaymentStatus);
+    return this.adminMode && !!this.intent() && ['CREATED', 'AUTHORIZED'].includes(this.intent()!.status as PaymentStatus);
+  }
+
+  protected canAuthorize(): boolean {
+    return !!this.intent() && this.intent()!.status === 'CREATED';
   }
 
   protected formatMoney(value: number | null | undefined, currencyCode: string | null | undefined): string {

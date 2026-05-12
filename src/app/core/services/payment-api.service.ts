@@ -17,9 +17,15 @@ export class PaymentApiService {
   private readonly baseApi = inject(BaseApiService);
 
   createIntent(request: CreatePaymentIntentRequest): Observable<PaymentIntent> {
-    return this.baseApi.post<PaymentIntent | ApiEnvelope<PaymentIntent>>(API_ENDPOINTS.payment.intents, request).pipe(
-      map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
-    );
+    return this.baseApi
+      .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
+        API_ENDPOINTS.payment.intents,
+        request,
+        'api',
+        undefined,
+        this.buildMutationHeaders(),
+      )
+      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
   }
 
   authorize(intentId: string, request?: PaymentAmountRequest | null): Observable<PaymentIntent> {
@@ -76,9 +82,9 @@ export class PaymentApiService {
     );
   }
 
-  getByOrderId(orderId: number): Observable<PaymentIntent> {
-    return this.baseApi.get<PaymentIntent | ApiEnvelope<PaymentIntent>>(API_ENDPOINTS.payment.byOrderId(orderId)).pipe(
-      map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+  getByOrderId(orderId: number): Observable<PaymentIntent | null> {
+    return this.baseApi.get<PaymentIntent | ApiEnvelope<PaymentIntent> | null>(API_ENDPOINTS.payment.byOrderId(orderId)).pipe(
+      map((response) => this.normalizeIntentOrNull(unwrapApiEnvelope(response))),
     );
   }
 
@@ -116,5 +122,9 @@ export class PaymentApiService {
       refundableAmount: intent.refundableAmount === null || intent.refundableAmount === undefined ? null : Number(intent.refundableAmount),
       terminal: !!intent.terminal,
     };
+  }
+
+  private normalizeIntentOrNull(intent: PaymentIntent | null): PaymentIntent | null {
+    return intent ? this.normalizeIntent(intent) : null;
   }
 }

@@ -298,23 +298,37 @@ export class AdminOrderDetailPage {
 
   protected readonly orderStatuses: OrderStatus[] = [
     'PENDING_CONFIRMATION',
+    'PENDING_PAYMENT',
     'CONFIRMED',
     'PACKING',
     'READY_TO_SHIP',
     'SHIPPING',
     'DELIVERED',
+    'COMPLETED',
     'CANCELLED',
     'DELIVERY_FAILED',
+    'RETURN_REQUESTED',
     'RETURNED',
   ];
 
   protected readonly paymentStatuses: PaymentStatus[] = [
-    'UNPAID',
+    'CREATED',
+    'AUTHORIZING',
+    'AUTHORIZED',
+    'CAPTURE_PENDING',
+    'CAPTURED',
     'PARTIALLY_PAID',
-    'PAID',
-    'REFUND_PENDING',
+    'PARTIALLY_REFUNDED',
     'REFUNDED',
+    'SETTLEMENT_PENDING',
+    'SETTLED',
+    'CHARGEBACK_OPEN',
+    'CHARGEBACK_WON',
+    'CHARGEBACK_LOST',
     'FAILED',
+    'VOIDED',
+    'PENDING',
+    'UNPAID',
   ];
 
   protected readonly fulfillmentStatuses: FulfillmentStatus[] = [
@@ -323,8 +337,10 @@ export class AdminOrderDetailPage {
     'PICKING',
     'PACKED',
     'SHIPPED',
+    'OUT_FOR_DELIVERY',
     'DELIVERED',
     'FAILED',
+    'RETURN_IN_PROGRESS',
     'RETURNED',
   ];
 
