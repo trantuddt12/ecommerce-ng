@@ -14,6 +14,7 @@ import { OrderDetail } from '../../../core/models/order.models';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OrderApiService } from '../../../core/services/order-api.service';
+import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-intent-panel.component';
 
 @Component({
   selector: 'app-my-order-detail-page',
@@ -28,6 +29,7 @@ import { OrderApiService } from '../../../core/services/order-api.service';
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
+    PaymentIntentPanelComponent,
   ],
   template: `
     <section class="order-page">
@@ -135,6 +137,14 @@ import { OrderApiService } from '../../../core/services/order-api.service';
             </mat-card-content>
           </mat-card>
         </section>
+
+        <app-payment-intent-panel
+          [orderId]="order()!.id"
+          [customerId]="order()!.customerId"
+          [orderAmount]="order()!.grandTotal"
+          [currencyCode]="order()!.currencyCode"
+          [canCreate]="order()!.canPay"
+        />
       }
     </section>
   `,

@@ -135,4 +135,14 @@ export const API_ENDPOINTS = {
     myCancel: (id: string | number) => `/orders/me/${id}/cancel`,
     myReturnRequest: (id: string | number) => `/orders/me/${id}/return-requests`,
   },
+  payment: {
+    intents: '/payments/intents',
+    authorize: (id: string) => `/payments/intents/${id}/authorize`,
+    capture: (id: string) => `/payments/intents/${id}/capture`,
+    refund: (id: string) => `/payments/intents/${id}/refund`,
+    void: (id: string) => `/payments/intents/${id}/void`,
+    byId: (id: string) => `/payments/intents/${id}`,
+    byOrderId: (orderId: string | number) => `/payments/intents/order/${orderId}`,
+    reconcile: '/payments/finance/reconcile',
+  },
 } as const;

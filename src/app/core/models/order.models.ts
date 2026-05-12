@@ -13,16 +13,25 @@ export type OrderStatus =
   | 'RETURNED';
 
 export type PaymentStatus =
-  | 'UNPAID'
-  | 'PENDING'
+  | 'CREATED'
+  | 'AUTHORIZING'
   | 'AUTHORIZED'
+  | 'CAPTURE_PENDING'
+  | 'CAPTURED'
   | 'PARTIALLY_PAID'
   | 'PAID'
-  | 'REFUND_PENDING'
   | 'PARTIALLY_REFUNDED'
+  | 'REFUND_PENDING'
   | 'REFUNDED'
+  | 'SETTLEMENT_PENDING'
+  | 'SETTLED'
+  | 'CHARGEBACK_OPEN'
+  | 'CHARGEBACK_WON'
+  | 'CHARGEBACK_LOST'
   | 'FAILED'
-  | 'VOIDED';
+  | 'VOIDED'
+  | 'PENDING'
+  | 'UNPAID';
 
 export type FulfillmentStatus =
   | 'UNFULFILLED'

@@ -34,16 +34,25 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  UNPAID: 'Chua thanh toan',
-  PENDING: 'Dang cho',
+  CREATED: 'Da tao yeu cau',
+  AUTHORIZING: 'Dang uy quyen',
   AUTHORIZED: 'Da uy quyen',
+  CAPTURE_PENDING: 'Cho capture',
+  CAPTURED: 'Da capture',
   PARTIALLY_PAID: 'Thanh toan mot phan',
   PAID: 'Da thanh toan',
-  REFUND_PENDING: 'Cho hoan tien',
   PARTIALLY_REFUNDED: 'Hoan tien mot phan',
+  REFUND_PENDING: 'Cho hoan tien',
   REFUNDED: 'Da hoan tien',
+  SETTLEMENT_PENDING: 'Cho doi soat',
+  SETTLED: 'Da doi soat',
+  CHARGEBACK_OPEN: 'Dang tranh chap',
+  CHARGEBACK_WON: 'Thang tranh chap',
+  CHARGEBACK_LOST: 'Thua tranh chap',
   FAILED: 'That bai',
   VOIDED: 'Da huy giao dich',
+  PENDING: 'Dang cho',
+  UNPAID: 'Chua thanh toan',
 };
 
 const FULFILLMENT_STATUS_LABELS: Record<string, string> = {

@@ -211,7 +211,13 @@ import { ProductApiService } from '../../core/services/product-api.service';
                 @for (product of featuredProducts(); track product.id) {
                   <article class="home-product-card">
                     <div class="home-product-media-shell">
-                      <button class="home-product-media-button" type="button" (click)="viewProductDetail(product.id)">
+                      <div
+                        class="home-product-media-button"
+                        role="button"
+                        tabindex="0"
+                        (click)="viewProductDetail(product.id)"
+                        (keydown)="openProductDetailFromKeyboard($event, product.id)"
+                      >
                         <div class="home-product-media">
                           @if (activeProductImageUrl(product); as imageUrl) {
                             <img [src]="imageUrl" [alt]="productDisplayName(product)" />
@@ -241,7 +247,7 @@ import { ProductApiService } from '../../core/services/product-api.service';
                             <div class="home-gallery-count">{{ activeProductImageIndex(product) + 1 }}/{{ productGalleryCount(product) }}</div>
                           }
                         </div>
-                      </button>
+                      </div>
 
                       @if (productGalleryImages(product).length > 1) {
                         <div class="home-product-thumbnails" [attr.aria-label]="'Bộ ảnh của ' + productDisplayName(product)">
@@ -269,9 +275,15 @@ import { ProductApiService } from '../../core/services/product-api.service';
                           <button class="home-link-badge" type="button" (click)="goToCategory(product.categoryId)">{{ product.categoryName }}</button>
                         }
                       </div>
-                      <button class="home-product-title-button" type="button" (click)="viewProductDetail(product.id)">
+                      <div
+                        class="home-product-title-button"
+                        role="button"
+                        tabindex="0"
+                        (click)="viewProductDetail(product.id)"
+                        (keydown)="openProductDetailFromKeyboard($event, product.id)"
+                      >
                         <h3 class="home-product-title">{{ productDisplayName(product) }}</h3>
-                      </button>
+                      </div>
                       <strong class="home-product-price">{{ formatCurrency(product.price) }}</strong>
                       <div class="home-product-inventory">{{ inventoryLabel(product) }}</div>
                       @if (product.lowStockMessage) {
@@ -1024,6 +1036,15 @@ export class PublicProductsPage implements OnInit {
 
   viewProductDetail(productId: number): void {
     void this.router.navigate([APP_ROUTES.storefrontProductDetail(productId)]);
+  }
+
+  openProductDetailFromKeyboard(event: KeyboardEvent, productId: number): void {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    this.viewProductDetail(productId);
   }
 
   addToCart(product: AdminProductListItem): void {

@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable, timeout } from 'rxjs';
 import { AppConfig } from '../config/app-config.model';
@@ -16,9 +16,14 @@ export class BaseApiService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
-  get<T>(path: string, params?: Record<string, QueryParamValue>, source: 'api' | 'search' = 'api'): Observable<T> {
+  get<T>(
+    path: string,
+    params?: Record<string, QueryParamValue>,
+    source: 'api' | 'search' = 'api',
+    headers?: HttpHeaders,
+  ): Observable<T> {
     return this.http
-      .get<T>(this.apiUrlBuilder.build(path, source), this.httpOptionsFactory.create(params))
+      .get<T>(this.apiUrlBuilder.build(path, source), this.httpOptionsFactory.create(params, headers))
       .pipe(timeout(this.config.requestTimeoutMs));
   }
 
@@ -27,26 +32,35 @@ export class BaseApiService {
     body: unknown,
     source: 'api' | 'search' = 'api',
     params?: Record<string, QueryParamValue>,
+    headers?: HttpHeaders,
   ): Observable<T> {
     return this.http
-      .post<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(params))
+      .post<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(params, headers))
       .pipe(timeout(this.config.requestTimeoutMs));
   }
 
-  put<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
-    return this.http.put<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  put<T>(path: string, body: unknown, source: 'api' | 'search' = 'api', headers?: HttpHeaders): Observable<T> {
+    return this.http
+      .put<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(undefined, headers))
+      .pipe(timeout(this.config.requestTimeoutMs));
   }
 
-  patch<T>(path: string, body: unknown, source: 'api' | 'search' = 'api'): Observable<T> {
-    return this.http.patch<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  patch<T>(path: string, body: unknown, source: 'api' | 'search' = 'api', headers?: HttpHeaders): Observable<T> {
+    return this.http
+      .patch<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(undefined, headers))
+      .pipe(timeout(this.config.requestTimeoutMs));
   }
 
-  delete<T>(path: string, source: 'api' | 'search' = 'api'): Observable<T> {
-    return this.http.delete<T>(this.apiUrlBuilder.build(path, source)).pipe(timeout(this.config.requestTimeoutMs));
+  delete<T>(path: string, source: 'api' | 'search' = 'api', headers?: HttpHeaders): Observable<T> {
+    return this.http
+      .delete<T>(this.apiUrlBuilder.build(path, source), this.httpOptionsFactory.create(undefined, headers))
+      .pipe(timeout(this.config.requestTimeoutMs));
   }
 
-  postFormData<T>(path: string, body: FormData, source: 'api' | 'search' = 'api'): Observable<T> {
-    return this.http.post<T>(this.apiUrlBuilder.build(path, source), body).pipe(timeout(this.config.requestTimeoutMs));
+  postFormData<T>(path: string, body: FormData, source: 'api' | 'search' = 'api', headers?: HttpHeaders): Observable<T> {
+    return this.http
+      .post<T>(this.apiUrlBuilder.build(path, source), body, this.httpOptionsFactory.create(undefined, headers))
+      .pipe(timeout(this.config.requestTimeoutMs));
   }
 
   postText(
@@ -54,10 +68,11 @@ export class BaseApiService {
     body: unknown,
     params?: Record<string, QueryParamValue>,
     source: 'api' | 'search' = 'api',
+    headers?: HttpHeaders,
   ): Observable<string> {
     return this.http
       .post(this.apiUrlBuilder.build(path, source), body, {
-        ...this.httpOptionsFactory.create(params),
+        ...this.httpOptionsFactory.create(params, headers),
         responseType: 'text',
       })
       .pipe(timeout(this.config.requestTimeoutMs));
