@@ -187,6 +187,7 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
           [currencyCode]="order()!.currencyCode"
           [adminMode]="true"
           [canCreate]="true"
+          (intentChanged)="loadOrder()"
         />
       }
     </section>
@@ -385,7 +386,7 @@ export class AdminOrderDetailPage {
     this.loadOrder();
   }
 
-  private loadOrder(): void {
+  protected loadOrder(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!Number.isFinite(id) || id <= 0) {
       this.errorMessage.set('Order id khong hop le.');

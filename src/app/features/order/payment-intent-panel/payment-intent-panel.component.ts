@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, Input, OnChanges, OnInit, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -171,6 +171,7 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
   @Input() currencyCode: string | null = null;
   @Input() canCreate = false;
   @Input() adminMode = false;
+  @Output() intentChanged = new EventEmitter<PaymentIntent>();
 
   private readonly paymentApi = inject(PaymentApiService);
   private readonly errorMapper = inject(ErrorMapperService);
@@ -240,7 +241,7 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
     const request: CreatePaymentIntentRequest = {
       orderId: this.orderId,
       customerId: this.customerId,
-      amount: this.amountInput || this.orderAmount,
+      amount: this.orderAmount,
       currencyCode: this.currencyCode,
       provider: this.provider || null,
     };
@@ -289,11 +290,11 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
   }
 
   protected canCapture(): boolean {
-    return this.adminMode && !!this.intent() && this.intent()?.status === 'AUTHORIZED';
+    return this.adminMode && !!this.intent() && ['AUTHORIZED', 'PARTIALLY_PAID'].includes(this.intent()!.status as PaymentStatus);
   }
 
   protected canRefund(): boolean {
-    return this.adminMode && !!this.intent() && ['CAPTURED', 'SETTLED'].includes(this.intent()!.status as PaymentStatus);
+    return this.adminMode && !!this.intent() && ['PARTIALLY_PAID', 'CAPTURED', 'PARTIALLY_REFUNDED', 'SETTLED'].includes(this.intent()!.status as PaymentStatus);
   }
 
   protected canVoid(): boolean {
@@ -324,6 +325,7 @@ export class PaymentIntentPanelComponent implements OnInit, OnChanges {
           this.provider = intent.provider || this.provider;
           this.amountInput = intent.amount;
           this.refundInput = intent.refundableAmount ?? intent.amount;
+          this.intentChanged.emit(intent);
           this.notifications.success(successMessage);
         },
         error: (error) => {
