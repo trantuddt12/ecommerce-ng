@@ -21,6 +21,8 @@ import {
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OrderApiService } from '../../../core/services/order-api.service';
+import { AuthStore } from '../../../core/state/auth.store';
+import { hasAnyPermission } from '../../../core/utils/permission.util';
 import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-intent-panel.component';
 
 @Component({
@@ -45,7 +47,7 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
         <mat-card-content>
           <p class="order-eyebrow">Admin Detail</p>
           <h2>{{ order()?.orderNumber || 'Order detail' }}</h2>
-          <p>Xu ly tien trinh don qua <code>PATCH /orders/:id/admin-status</code> voi 3 truc status va inventory timeline.</p>
+          <p>Xu ly tien trinh don, giao hang va ghi nhan thanh toan COD theo tung endpoint admin rieng.</p>
         </mat-card-content>
       </mat-card>
 
@@ -119,55 +121,101 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
               <div class="order-panel-header">
                 <div>
                   <h3>Cap nhat trang thai</h3>
-                  <p>Controller se validate transition va cac field bat buoc.</p>
+                  <p>Controller se validate transition va cac field bat buoc. Payment COD duoc xu ly rieng ben duoi.</p>
                 </div>
               </div>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Order status</mat-label>
-                <mat-select [(ngModel)]="form.orderStatus">
-                  @for (status of orderStatuses; track status) {
-                    <mat-option [value]="status">{{ status }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+              @if (canUpdateOrder()) {
+                <mat-form-field appearance="outline">
+                  <mat-label>Order status</mat-label>
+                  <mat-select [(ngModel)]="form.orderStatus">
+                    @for (status of orderStatuses; track status) {
+                      <mat-option [value]="status">{{ status }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Payment status</mat-label>
-                <mat-select [(ngModel)]="form.paymentStatus">
-                  @for (status of paymentStatuses; track status) {
-                    <mat-option [value]="status">{{ status }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Fulfillment status</mat-label>
+                  <mat-select [(ngModel)]="form.fulfillmentStatus">
+                    @for (status of fulfillmentStatuses; track status) {
+                      <mat-option [value]="status">{{ status }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Fulfillment status</mat-label>
-                <mat-select [(ngModel)]="form.fulfillmentStatus">
-                  @for (status of fulfillmentStatuses; track status) {
-                    <mat-option [value]="status">{{ status }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Tracking number</mat-label>
+                  <input matInput [(ngModel)]="form.trackingNumber" placeholder="VNPOST123456" />
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Tracking number</mat-label>
-                <input matInput [(ngModel)]="form.trackingNumber" placeholder="VNPOST123456" />
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Cancel reason</mat-label>
+                  <textarea matInput rows="2" [(ngModel)]="form.cancelReason"></textarea>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Cancel reason</mat-label>
-                <textarea matInput rows="2" [(ngModel)]="form.cancelReason"></textarea>
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Internal note</mat-label>
+                  <textarea matInput rows="3" [(ngModel)]="form.internalNote"></textarea>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Internal note</mat-label>
-                <textarea matInput rows="3" [(ngModel)]="form.internalNote"></textarea>
-              </mat-form-field>
+                <div class="order-actions">
+                  <button mat-flat-button color="primary" type="button" (click)="applyStatusUpdate()" [disabled]="loading()">Cap nhat don</button>
+                </div>
+              } @else {
+                <div class="order-permission-note">
+                  Ban co quyen xem don, nhung can ORDER_UPDATE hoac ORDER_MANAGE de cap nhat trang thai.
+                </div>
+              }
 
-              <div class="order-actions">
-                <button mat-flat-button color="primary" type="button" (click)="applyStatusUpdate()" [disabled]="loading()">Cap nhat</button>
+              <div class="order-section-divider"></div>
+
+              <div class="order-panel-header">
+                <div>
+                  <h3>Thanh toan COD</h3>
+                  <p>Ghi nhan thu tien thu cong qua <code>PATCH /orders/:id/payment-status</code>.</p>
+                </div>
               </div>
+
+              @if (isCodOrder()) {
+                <div class="order-cod-status">
+                  <span>Phuong thuc</span>
+                  <strong>{{ order()!.paymentMethodCode || 'COD' }}</strong>
+                </div>
+
+                @if (canUpdateOrder()) {
+                  <mat-form-field appearance="outline">
+                    <mat-label>Payment status</mat-label>
+                    <mat-select [(ngModel)]="paymentForm.paymentStatus">
+                      @for (status of paymentStatuses; track status) {
+                        <mat-option [value]="status">{{ status }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Payment note</mat-label>
+                    <textarea matInput rows="2" [(ngModel)]="paymentForm.internalNote"></textarea>
+                  </mat-form-field>
+
+                  <div class="order-actions order-actions-wrap">
+                    <button mat-flat-button color="primary" type="button" (click)="markCodSettled()" [disabled]="loading() || isCodPaid()">
+                      Da thu COD
+                    </button>
+                    <button mat-stroked-button type="button" (click)="applyPaymentStatusUpdate()" [disabled]="loading()">
+                      Cap nhat thanh toan
+                    </button>
+                  </div>
+                } @else {
+                  <div class="order-permission-note">
+                    Can ORDER_UPDATE hoac ORDER_MANAGE de ghi nhan COD da thu tien.
+                  </div>
+                }
+              } @else {
+                <div class="order-permission-note">
+                  Don nay khong phai COD; payment intent panel ben duoi xu ly thanh toan online.
+                </div>
+              }
 
               <div class="order-summary">
                 <p><strong>Inventory badge:</strong> {{ inventoryBadge() }}</p>
@@ -186,7 +234,7 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
           [orderAmount]="order()!.grandTotal"
           [currencyCode]="order()!.currencyCode"
           [adminMode]="true"
-          [canCreate]="true"
+          [canCreate]="canUpdateOrder()"
           (intentChanged)="loadOrder()"
         />
       }
@@ -264,6 +312,31 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
 
     .order-summary p { margin: 0; }
     .order-actions { display: flex; gap: 0.7rem; }
+    .order-actions-wrap { flex-wrap: wrap; }
+
+    .order-section-divider {
+      height: 1px;
+      background: rgba(148, 163, 184, 0.28);
+      margin: 0.15rem 0;
+    }
+
+    .order-cod-status,
+    .order-permission-note {
+      padding: 0.82rem;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(241, 245, 249, 0.72);
+      color: #334155;
+    }
+
+    .order-cod-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+    }
+
+    .order-cod-status span { color: #64748b; }
 
     .order-error {
       padding: 0.82rem 1rem;
@@ -292,6 +365,7 @@ export class AdminOrderDetailPage {
   private readonly orderApi = inject(OrderApiService);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly notifications = inject(NotificationService);
+  private readonly authStore = inject(AuthStore);
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
@@ -347,12 +421,30 @@ export class AdminOrderDetailPage {
 
   protected readonly form: OrderAdminStatusUpdateRequest = {
     orderStatus: 'PENDING_CONFIRMATION',
-    paymentStatus: 'UNPAID',
     fulfillmentStatus: 'UNFULFILLED',
     trackingNumber: '',
     cancelReason: '',
     internalNote: '',
   };
+
+  protected readonly paymentForm: Pick<OrderAdminStatusUpdateRequest, 'paymentStatus' | 'internalNote'> = {
+    paymentStatus: 'UNPAID',
+    internalNote: '',
+  };
+
+  protected readonly canUpdateOrder = computed(() => {
+    return hasAnyPermission(this.authStore.permissions(), ['ORDER_UPDATE', 'ORDER_MANAGE']);
+  });
+
+  protected readonly isCodOrder = computed(() => {
+    const method = this.order()?.paymentMethodCode?.trim().toUpperCase();
+    return method === 'COD' || method === 'CASH_ON_DELIVERY';
+  });
+
+  protected readonly isCodPaid = computed(() => {
+    const status = this.order()?.paymentStatus;
+    return status === 'CAPTURED' || status === 'SETTLED';
+  });
 
   protected readonly fullAddress = computed(() => {
     const value = this.order();
@@ -401,13 +493,7 @@ export class AdminOrderDetailPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (order) => {
-          this.order.set(order);
-          this.form.orderStatus = order.orderStatus as OrderStatus;
-          this.form.paymentStatus = order.paymentStatus as PaymentStatus;
-          this.form.fulfillmentStatus = order.fulfillmentStatus as FulfillmentStatus;
-          this.form.trackingNumber = order.trackingNumber || '';
-          this.form.cancelReason = order.cancelReason || '';
-          this.form.internalNote = order.internalNote || '';
+          this.setOrderState(order);
         },
         error: (error) => this.errorMessage.set(this.errorMapper.map(error).message),
       });
@@ -424,7 +510,6 @@ export class AdminOrderDetailPage {
 
     const payload: OrderAdminStatusUpdateRequest = {
       orderStatus: this.form.orderStatus,
-      paymentStatus: this.form.paymentStatus,
       fulfillmentStatus: this.form.fulfillmentStatus,
       trackingNumber: this.form.trackingNumber?.trim() || null,
       cancelReason: this.form.cancelReason?.trim() || null,
@@ -436,7 +521,7 @@ export class AdminOrderDetailPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (updated) => {
-          this.order.set(updated);
+          this.setOrderState(updated);
           this.notifications.success('Cap nhat trang thai don thanh cong.');
         },
         error: (error) => {
@@ -445,5 +530,52 @@ export class AdminOrderDetailPage {
           this.notifications.error(mapped.message);
         },
       });
+  }
+
+  protected markCodSettled(): void {
+    this.paymentForm.paymentStatus = 'SETTLED';
+    this.paymentForm.internalNote = this.paymentForm.internalNote?.trim() || 'COD cash collected by shipper';
+    this.applyPaymentStatusUpdate();
+  }
+
+  protected applyPaymentStatusUpdate(): void {
+    const current = this.order();
+    if (!current || !this.paymentForm.paymentStatus) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+
+    const payload: Pick<OrderAdminStatusUpdateRequest, 'paymentStatus' | 'internalNote'> = {
+      paymentStatus: this.paymentForm.paymentStatus,
+      internalNote: this.paymentForm.internalNote?.trim() || null,
+    };
+
+    this.orderApi
+      .updateAdminPaymentStatus(current.id, payload)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (updated) => {
+          this.setOrderState(updated);
+          this.notifications.success('Cap nhat thanh toan COD thanh cong.');
+        },
+        error: (error) => {
+          const mapped = this.errorMapper.map(error);
+          this.errorMessage.set(mapped.message);
+          this.notifications.error(mapped.message);
+        },
+      });
+  }
+
+  private setOrderState(order: OrderDetail): void {
+    this.order.set(order);
+    this.form.orderStatus = order.orderStatus as OrderStatus;
+    this.form.fulfillmentStatus = order.fulfillmentStatus as FulfillmentStatus;
+    this.form.trackingNumber = order.trackingNumber || '';
+    this.form.cancelReason = order.cancelReason || '';
+    this.form.internalNote = order.internalNote || '';
+    this.paymentForm.paymentStatus = order.paymentStatus as PaymentStatus;
+    this.paymentForm.internalNote = order.internalNote || '';
   }
 }
