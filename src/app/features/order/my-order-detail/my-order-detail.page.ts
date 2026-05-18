@@ -80,6 +80,12 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
                 <div class="order-note"><strong>Ghi chu khach:</strong> {{ order()!.customerNote }}</div>
               }
 
+              @if (isMomoOrder() && order()!.canPay) {
+                <div class="order-actions">
+                  <a mat-flat-button color="primary" [routerLink]="APP_ROUTES.momoPayment(order()!.id)">Thanh toan MoMo</a>
+                </div>
+              }
+
               <div class="order-item-list">
                 @for (item of order()!.items; track item.id) {
                   <div class="order-item">
@@ -138,14 +144,16 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
           </mat-card>
         </section>
 
-        <app-payment-intent-panel
-          [orderId]="order()!.id"
-          [customerId]="order()!.customerId"
-          [orderAmount]="order()!.grandTotal"
-          [currencyCode]="order()!.currencyCode"
-          [canCreate]="order()!.canPay"
-          (intentChanged)="loadOrder()"
-        />
+        @if (!isMomoOrder()) {
+          <app-payment-intent-panel
+            [orderId]="order()!.id"
+            [customerId]="order()!.customerId"
+            [orderAmount]="order()!.grandTotal"
+            [currencyCode]="order()!.currencyCode"
+            [canCreate]="order()!.canPay"
+            (intentChanged)="loadOrder()"
+          />
+        }
       }
     </section>
   `,
@@ -261,6 +269,10 @@ export class MyOrderDetailPage {
   protected readonly canReturn = computed(() => !!this.order()?.canReturn);
 
   protected readonly canPay = computed(() => !!this.order()?.canPay);
+
+  protected isMomoOrder(): boolean {
+    return this.order()?.paymentMethodCode?.toUpperCase() === 'MOMO';
+  }
 
   protected readonly fullAddress = computed(() => {
     const value = this.order();

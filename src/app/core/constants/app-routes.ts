@@ -16,6 +16,7 @@ export const APP_ROUTES = {
   search: '/admin/catalog/search',
   cart: '/client/cart',
   cartCheckout: '/client/checkout',
+  momoPayment: (orderId: string | number) => `/client/payments/momo/${orderId}`,
   login: '/auth/login',
   myOrders: '/client/orders/me',
   myOrderDetail: (id: string | number) => `/client/orders/me/${id}`,

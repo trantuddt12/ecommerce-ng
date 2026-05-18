@@ -4,6 +4,7 @@ import { permissionGuard } from '../../core/guards/permission.guard';
 import { ClientLayoutComponent } from '../../core/layout/client-layout.component';
 import { CartPage } from '../order/cart/cart.page';
 import { CheckoutPage } from '../order/checkout/checkout.page';
+import { MomoPaymentPage } from '../order/momo-payment/momo-payment.page';
 import { MyOrderDetailPage } from '../order/my-order-detail/my-order-detail.page';
 import { MyOrdersPage } from '../order/my-orders/my-orders.page';
 
@@ -22,6 +23,11 @@ export const clientRoutes: Routes = [
       {
         path: 'checkout',
         component: CheckoutPage,
+        data: { roles: ['CUSTOMER'] },
+      },
+      {
+        path: 'payments/momo/:orderId',
+        component: MomoPaymentPage,
         data: { roles: ['CUSTOMER'] },
       },
       {

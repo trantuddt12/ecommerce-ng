@@ -52,6 +52,18 @@ export interface PaymentAmountRequest {
   amount?: number | null;
 }
 
+export interface MomoPaymentSimulationRequest {
+  outcome: 'APPROVED' | 'DECLINED';
+}
+
+export interface MomoPaymentSimulationResponse {
+  orderId: number | null;
+  provider: PaymentProvider | null;
+  outcome: 'APPROVED' | 'DECLINED' | string;
+  message: string | null;
+  intent: PaymentIntent;
+}
+
 export interface PaymentFinanceReconcileRequest {
   businessDate?: string | null;
 }

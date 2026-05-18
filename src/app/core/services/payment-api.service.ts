@@ -6,6 +6,8 @@ import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
 import {
   CreatePaymentIntentRequest,
+  MomoPaymentSimulationRequest,
+  MomoPaymentSimulationResponse,
   PaymentAmountRequest,
   PaymentFinanceReconcileRequest,
   PaymentFinanceReconcileResult,
@@ -76,6 +78,18 @@ export class PaymentApiService {
       .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
   }
 
+  simulateMomo(intentId: string, request: MomoPaymentSimulationRequest): Observable<MomoPaymentSimulationResponse> {
+    return this.baseApi
+      .post<MomoPaymentSimulationResponse | ApiEnvelope<MomoPaymentSimulationResponse>>(
+        API_ENDPOINTS.payment.simulateMomo(intentId),
+        request,
+        'api',
+        undefined,
+        this.buildMutationHeaders(),
+      )
+      .pipe(map((response) => this.normalizeMomoResponse(unwrapApiEnvelope(response))));
+  }
+
   getById(intentId: string): Observable<PaymentIntent> {
     return this.baseApi.get<PaymentIntent | ApiEnvelope<PaymentIntent>>(API_ENDPOINTS.payment.byId(intentId)).pipe(
       map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
@@ -126,5 +140,12 @@ export class PaymentApiService {
 
   private normalizeIntentOrNull(intent: PaymentIntent | null): PaymentIntent | null {
     return intent ? this.normalizeIntent(intent) : null;
+  }
+
+  private normalizeMomoResponse(response: MomoPaymentSimulationResponse): MomoPaymentSimulationResponse {
+    return {
+      ...response,
+      intent: this.normalizeIntent(response.intent),
+    };
   }
 }

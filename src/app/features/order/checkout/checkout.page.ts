@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatRadioModule } from '@angular/material/radio';
 import { finalize } from 'rxjs';
 import { APP_ROUTES } from '../../../core/constants/app-routes';
 import { CheckoutFromCartRequest } from '../../../core/models/order.models';
@@ -28,6 +29,7 @@ import { CartStore } from '../../../core/state/cart.store';
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
+    MatRadioModule,
   ],
   template: `
     <section class="order-page">
@@ -109,15 +111,25 @@ import { CartStore } from '../../../core/state/cart.store';
                 <input matInput [(ngModel)]="form.shippingMethodName" placeholder="Giao hang tieu chuan" [disabled]="loading()" />
               </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Ma thanh toan</mat-label>
-                <input matInput [(ngModel)]="form.paymentMethodCode" placeholder="COD" [disabled]="loading()" />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Ten hinh thuc thanh toan</mat-label>
-                <input matInput [(ngModel)]="form.paymentMethodName" placeholder="Thanh toan khi nhan hang" [disabled]="loading()" />
-              </mat-form-field>
+              <div class="order-payment-methods">
+                <div class="order-payment-heading">
+                  <h4>Thanh toan</h4>
+                  <p>Chon COD hoac MoMo gia lap cho don hang nay.</p>
+                </div>
+                <mat-radio-group
+                  class="order-payment-options"
+                  [ngModel]="form.paymentMethodCode"
+                  (ngModelChange)="selectPaymentMethod($event)"
+                  [disabled]="loading()"
+                >
+                  @for (method of paymentMethods; track method.code) {
+                    <mat-radio-button class="order-payment-option" [value]="method.code">
+                      <strong>{{ method.name }}</strong>
+                      <span>{{ method.description }}</span>
+                    </mat-radio-button>
+                  }
+                </mat-radio-group>
+              </div>
             </div>
 
             <mat-form-field appearance="outline">
@@ -190,7 +202,65 @@ import { CartStore } from '../../../core/state/cart.store';
       </section>
     </section>
   `,
-  styles: [``],
+  styles: [`
+    .order-payment-methods {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 0.75rem;
+      padding: 0.95rem;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 0.9rem;
+      background: rgba(248, 250, 252, 0.78);
+    }
+
+    .order-payment-heading h4,
+    .order-payment-heading p {
+      margin: 0;
+    }
+
+    .order-payment-heading h4 {
+      color: #0f172a;
+      font-size: 1rem;
+    }
+
+    .order-payment-heading p {
+      margin-top: 0.25rem;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    .order-payment-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .order-payment-option {
+      min-height: 5rem;
+      padding: 0.85rem;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 0.8rem;
+      background: #fff;
+    }
+
+    .order-payment-option strong,
+    .order-payment-option span {
+      display: block;
+    }
+
+    .order-payment-option span {
+      margin-top: 0.2rem;
+      color: #64748b;
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 720px) {
+      .order-payment-options {
+        grid-template-columns: 1fr;
+      }
+    }
+  `],
 })
 export class CheckoutPage {
   protected readonly APP_ROUTES = APP_ROUTES;
@@ -202,6 +272,18 @@ export class CheckoutPage {
   protected readonly cart = this.cartStore.cart;
   protected readonly pricingPreview = this.cartStore.pricingPreview;
   protected readonly loading = computed(() => this.cartStore.isLoading() || this.cartStore.isCheckoutSubmitting());
+  protected readonly paymentMethods = [
+    {
+      code: 'COD',
+      name: 'Thanh toan khi nhan hang',
+      description: 'Dat hang ngay, thanh toan bang tien mat khi nhan hang.',
+    },
+    {
+      code: 'MOMO',
+      name: 'Vi MoMo gia lap',
+      description: 'Tao payment intent va chuyen sang man MoMo sandbox noi bo.',
+    },
+  ];
 
   protected readonly form: CheckoutFromCartRequest = {
     recipientName: '',
@@ -263,7 +345,11 @@ export class CheckoutPage {
     ).subscribe({
       next: (order) => {
         this.notifications.success(`Dat hang thanh cong: ${order.orderNumber}`);
-        void this.router.navigateByUrl(APP_ROUTES.myOrderDetail(order.id));
+        const paymentMethodCode = order.paymentMethodCode || request.paymentMethodCode;
+        const nextUrl = paymentMethodCode?.toUpperCase() === 'MOMO'
+          ? APP_ROUTES.momoPayment(order.id)
+          : APP_ROUTES.myOrderDetail(order.id);
+        void this.router.navigateByUrl(nextUrl);
       },
       error: (error) => {
         const mapped = this.errorMapper.map(error);
@@ -284,6 +370,12 @@ export class CheckoutPage {
 
   protected checkoutAvailabilityLabel(): string {
     return this.canSubmit() ? 'Co the checkout' : 'Can cap nhat lai ton kho';
+  }
+
+  protected selectPaymentMethod(code: string): void {
+    const method = this.paymentMethods.find((item) => item.code === code) ?? this.paymentMethods[0];
+    this.form.paymentMethodCode = method.code;
+    this.form.paymentMethodName = method.name;
   }
 
   protected formatCurrency(value: number | null | undefined, currencyCode: string | null | undefined): string {

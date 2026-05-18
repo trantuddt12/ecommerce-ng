@@ -141,6 +141,7 @@ export const API_ENDPOINTS = {
     capture: (id: string) => `/payments/intents/${id}/capture`,
     refund: (id: string) => `/payments/intents/${id}/refund`,
     void: (id: string) => `/payments/intents/${id}/void`,
+    simulateMomo: (id: string) => `/payments/intents/${id}/momo/simulate`,
     byId: (id: string) => `/payments/intents/${id}`,
     byOrderId: (orderId: string | number) => `/payments/intents/order/${orderId}`,
     reconcile: '/payments/finance/reconcile',
