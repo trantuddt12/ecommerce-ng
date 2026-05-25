@@ -166,9 +166,7 @@ export interface CustomerOrderCancelRequest {
   cancelReason: string;
 }
 
-export interface CustomerOrderReturnRequest {
-  cancelReason: string;
-}
+export type CustomerOrderReturnRequest = CustomerOrderCancelRequest;
 
 export interface OrderListFilters {
   orderNumber?: string | null;

@@ -17,15 +17,12 @@ export const API_ENDPOINTS = {
   user: {
     list: '/user',
     create: '/user',
-    register: '/user/register',
     update: '/user/update',
     delete: (id: string | number) => `/user/${id}`,
-    byId: (id: string | number) => `/user/${id}`,
   },
   role: {
     list: '/role',
     create: '/role',
-    byId: (id: string | number) => `/role/${id}`,
     update: (id: string | number) => `/role/${id}`,
     delete: (id: string | number) => `/role/${id}`,
   },
@@ -38,7 +35,6 @@ export const API_ENDPOINTS = {
     storefrontBySlug: (slug: string) => `/brands/storefront/by-slug/${slug}`,
     create: '/brands',
     update: (id: string | number) => `/brands/update/${id}`,
-    byId: (id: string | number) => `/brands/${id}`,
     delete: (id: string | number) => `/brands/${id}`,
     image: (id: string | number) => `/brands/${id}/image`,
     images: (id: string | number) => `/brands/${id}/images`,
@@ -88,7 +84,6 @@ export const API_ENDPOINTS = {
   attribute: {
     list: '/attributes',
     create: '/attributes',
-    byId: (id: string | number) => `/attributes/${id}`,
     update: (id: string | number) => `/attributes/${id}`,
     delete: (id: string | number) => `/attributes/${id}`,
     options: '/attribute-options',
@@ -109,7 +104,6 @@ export const API_ENDPOINTS = {
     product: '/export/product',
     attributes: '/export/attributes',
     categoryAttributes: '/export/category-attributes',
-    categoryAttributesImport: '/export/category-attributes/import',
   },
   search: {
     brand: '/search/brand',
@@ -125,7 +119,6 @@ export const API_ENDPOINTS = {
   },
   order: {
     list: '/orders',
-    create: '/orders',
     byId: (id: string | number) => `/orders/${id}`,
     adminStatus: (id: string | number) => `/orders/${id}/admin-status`,
     paymentStatus: (id: string | number) => `/orders/${id}/payment-status`,
