@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,12 +9,14 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { finalize } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { APP_ROUTES } from '../../../core/constants/app-routes';
 import { OrderDetail } from '../../../core/models/order.models';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { OrderApiService } from '../../../core/services/order-api.service';
+import { isOrderStatusTerminal } from '../../../core/utils/order-status.util';
+import { pollUntil } from '../../../core/utils/polling.util';
 import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-intent-panel.component';
 
 @Component({
@@ -65,6 +68,13 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
                 <mat-chip class="order-chip">{{ order()!.orderStatus }}</mat-chip>
                 <mat-chip class="order-chip order-chip-soft">{{ order()!.paymentStatus }}</mat-chip>
                 <mat-chip class="order-chip order-chip-neutral">{{ order()!.fulfillmentStatus }}</mat-chip>
+                @if (polling()) {
+                  <mat-chip class="order-chip order-chip-live">Dang cap nhat live...</mat-chip>
+                } @else if (pollingTimedOut()) {
+                  <mat-chip class="order-chip order-chip-warn">
+                    Tam dung tu dong cap nhat. <button mat-button type="button" (click)="loadOrder()">Tai lai</button>
+                  </mat-chip>
+                }
               </div>
 
               <div class="order-summary-grid">
@@ -193,6 +203,11 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
     .order-chip { background: rgba(219, 234, 254, 0.84) !important; color: #1d4ed8 !important; }
     .order-chip-soft { background: rgba(191, 219, 254, 0.85) !important; color: #1e3a8a !important; }
     .order-chip-neutral { background: rgba(226, 232, 240, 0.95) !important; color: #334155 !important; }
+    .order-chip-live { background: rgba(187, 247, 208, 0.85) !important; color: #166534 !important; animation: order-chip-pulse 1.4s ease-in-out infinite; }
+    .order-chip-warn { background: rgba(254, 215, 170, 0.9) !important; color: #9a3412 !important; }
+    .order-chip-warn button { margin-left: 0.4rem; padding: 0 0.5rem; min-width: auto; line-height: 1.4; }
+
+    @keyframes order-chip-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
     .order-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; color: #0f172a; }
     .order-note { padding: 0.75rem 0.85rem; border-radius: 0.85rem; background: rgba(240, 249, 255, 0.72); border: 1px solid rgba(125, 211, 252, 0.3); }
@@ -258,11 +273,16 @@ export class MyOrderDetailPage {
   private readonly orderApi = inject(OrderApiService);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly notifications = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly order = signal<OrderDetail | null>(null);
+  protected readonly polling = signal(false);
+  protected readonly pollingTimedOut = signal(false);
   protected cancelReason = '';
+
+  private pollingSub: Subscription | null = null;
 
   protected readonly canCancel = computed(() => !!this.order()?.canCancel);
 
@@ -298,6 +318,7 @@ export class MyOrderDetailPage {
 
     this.loading.set(true);
     this.errorMessage.set('');
+    this.pollingTimedOut.set(false);
 
     this.orderApi
       .getMyOrderById(id)
@@ -306,9 +327,55 @@ export class MyOrderDetailPage {
         next: (order) => {
           this.order.set(order);
           this.cancelReason = order.cancelReason || '';
+          this.startPollingIfNeeded(id, order);
         },
-        error: (error) => this.errorMessage.set(this.errorMapper.map(error).message),
+        error: (error) => {
+          this.stopPolling();
+          this.errorMessage.set(this.errorMapper.map(error).message);
+        },
       });
+  }
+
+  private startPollingIfNeeded(orderId: number, currentOrder: OrderDetail): void {
+    this.stopPolling();
+    if (isOrderStatusTerminal(currentOrder.orderStatus)) {
+      return;
+    }
+
+    this.polling.set(true);
+    const previousStatus = currentOrder.orderStatus;
+
+    this.pollingSub = pollUntil(() => this.orderApi.getMyOrderById(orderId), {
+      intervalMs: 5000,
+      timeoutMs: 180000,
+      shouldStop: (order) => isOrderStatusTerminal(order.orderStatus),
+      onError: () => 'continue',
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.order.set(result.value);
+          this.cancelReason = result.value.cancelReason || this.cancelReason;
+          if (result.value.orderStatus !== previousStatus) {
+            this.notifications.success(`Trang thai don hang: ${result.value.orderStatus}`);
+          }
+          if (result.stopped) {
+            this.polling.set(false);
+          } else if (result.timedOut) {
+            this.polling.set(false);
+            this.pollingTimedOut.set(true);
+          }
+        },
+        error: () => {
+          this.polling.set(false);
+        },
+      });
+  }
+
+  private stopPolling(): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = null;
+    this.polling.set(false);
   }
 
   protected cancelOrder(): void {
@@ -332,6 +399,7 @@ export class MyOrderDetailPage {
         next: (updated) => {
           this.order.set(updated);
           this.notifications.success('Da huy don thanh cong.');
+          this.stopPolling();
         },
         error: (error) => {
           const mapped = this.errorMapper.map(error);

@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { finalize } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { APP_ROUTES } from '../../../core/constants/app-routes';
 import { OrderDetail } from '../../../core/models/order.models';
 import { PaymentIntent } from '../../../core/models/payment.models';
@@ -13,6 +14,7 @@ import { ErrorMapperService } from '../../../core/services/error-mapper.service'
 import { NotificationService } from '../../../core/services/notification.service';
 import { OrderApiService } from '../../../core/services/order-api.service';
 import { PaymentApiService } from '../../../core/services/payment-api.service';
+import { pollUntil } from '../../../core/utils/polling.util';
 
 @Component({
   selector: 'app-momo-payment-page',
@@ -83,6 +85,13 @@ import { PaymentApiService } from '../../../core/services/payment-api.service';
               <div class="momo-summary-header">
                 <h3>Don hang</h3>
                 <mat-chip>{{ currentOrder.paymentStatus }}</mat-chip>
+                @if (polling()) {
+                  <mat-chip class="momo-chip-live">Dang cap nhat...</mat-chip>
+                } @else if (pollingTimedOut()) {
+                  <mat-chip class="momo-chip-warn">
+                    Het thoi gian cho. <button mat-button type="button" (click)="loadPayment()">Tai lai</button>
+                  </mat-chip>
+                }
               </div>
 
               <div class="momo-summary-list">
@@ -272,6 +281,12 @@ import { PaymentApiService } from '../../../core/services/payment-api.service';
       color: #991b1b;
     }
 
+    .momo-chip-live { background: rgba(187, 247, 208, 0.85) !important; color: #166534 !important; animation: momo-chip-pulse 1.4s ease-in-out infinite; }
+    .momo-chip-warn { background: rgba(254, 215, 170, 0.9) !important; color: #9a3412 !important; }
+    .momo-chip-warn button { margin-left: 0.4rem; padding: 0 0.5rem; min-width: auto; line-height: 1.4; }
+
+    @keyframes momo-chip-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
     @media (max-width: 860px) {
       .momo-grid {
         grid-template-columns: 1fr;
@@ -292,12 +307,17 @@ export class MomoPaymentPage implements OnInit {
   private readonly paymentApi = inject(PaymentApiService);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly notifications = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly order = signal<OrderDetail | null>(null);
   protected readonly intent = signal<PaymentIntent | null>(null);
   protected readonly loading = signal(false);
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly polling = signal(false);
+  protected readonly pollingTimedOut = signal(false);
+
+  private pollingSub: Subscription | null = null;
   protected readonly canPay = computed(() => {
     const currentIntent = this.intent();
     const currentOrder = this.order();
@@ -318,6 +338,8 @@ export class MomoPaymentPage implements OnInit {
       return;
     }
 
+    this.stopPolling();
+    this.pollingTimedOut.set(false);
     this.loading.set(true);
     this.errorMessage.set('');
     this.orderApi.getMyOrderById(orderId)
@@ -345,11 +367,8 @@ export class MomoPaymentPage implements OnInit {
       .subscribe({
         next: (response) => {
           this.intent.set(response.intent);
-          this.notifications.success('Thanh toan MoMo thanh cong.');
-          const orderId = response.orderId ?? this.order()?.id;
-          if (orderId) {
-            void this.router.navigateByUrl(APP_ROUTES.myOrderDetail(orderId));
-          }
+          this.notifications.success('Da gui xac nhan MoMo. Dang cho he thong cap nhat...');
+          this.startIntentPolling(response.intent.id, true);
         },
         error: (error) => this.showError(error),
       });
@@ -370,9 +389,66 @@ export class MomoPaymentPage implements OnInit {
         next: (response) => {
           this.intent.set(response.intent);
           this.notifications.error('MoMo da tu choi giao dich gia lap.');
+          this.startIntentPolling(response.intent.id, false);
         },
         error: (error) => this.showError(error),
       });
+  }
+
+  private startIntentPolling(intentId: string, redirectOnTerminal: boolean): void {
+    this.stopPolling();
+    this.pollingTimedOut.set(false);
+
+    if (this.intent()?.terminal) {
+      this.handleTerminalIntent(redirectOnTerminal);
+      return;
+    }
+
+    this.polling.set(true);
+
+    this.pollingSub = pollUntil(() => this.paymentApi.getById(intentId), {
+      intervalMs: 3000,
+      timeoutMs: 90000,
+      shouldStop: (intent) => intent.terminal,
+      onError: () => 'continue',
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.intent.set(result.value);
+          if (result.stopped) {
+            this.polling.set(false);
+            this.handleTerminalIntent(redirectOnTerminal);
+          } else if (result.timedOut) {
+            this.polling.set(false);
+            this.pollingTimedOut.set(true);
+            this.notifications.error('Het thoi gian cho cap nhat thanh toan. Vui long tai lai.');
+          }
+        },
+        error: () => {
+          this.polling.set(false);
+        },
+      });
+  }
+
+  private handleTerminalIntent(redirectOnTerminal: boolean): void {
+    const currentIntent = this.intent();
+    if (!currentIntent) return;
+    if (currentIntent.status === 'CAPTURED' || currentIntent.status === 'SETTLED') {
+      this.notifications.success('Thanh toan thanh cong.');
+      if (redirectOnTerminal) {
+        const orderId = currentIntent.orderId ?? this.order()?.id;
+        if (orderId) {
+          void this.router.navigateByUrl(APP_ROUTES.myOrderDetail(orderId));
+        }
+      }
+    }
+  }
+
+  private stopPolling(): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = null;
+    this.polling.set(false);
   }
 
   protected formatMoney(value: number | null | undefined, currencyCode: string | null | undefined): string {
@@ -399,6 +475,9 @@ export class MomoPaymentPage implements OnInit {
       next: (intent) => {
         if (intent) {
           this.intent.set(intent);
+          if (!intent.terminal && intent.status !== 'CREATED') {
+            this.startIntentPolling(intent.id, false);
+          }
           return;
         }
         if (order.paymentMethodCode?.toUpperCase() !== 'MOMO' || !order.canPay) {
