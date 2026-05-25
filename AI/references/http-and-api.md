@@ -28,54 +28,23 @@ Thu tu hien tai:
 
 ## Endpoint constants hien tai
 
-Nguon: `src/app/core/constants/api-endpoints.ts`
+Nguon: `src/app/core/constants/api-endpoints.ts`. Nhom theo domain, chi liet ke khai quat. Chi tiet tung endpoint (HTTP method, request, response shape) xem `AI/references/api-inventory.md`.
 
-### Auth
-
-- `/auth/login`
-- `/auth/refresh`
-- `/auth/logout`
-- `/auth/sendotp`
-- `/auth/sendotpregister`
-- `/auth/verifyotp`
-
-### Health
-
-- `/health-check`
-
-### User
-
-- `/user`
-- `/user/register`
-- `/user/update`
-- `/user/:id`
-
-### Role
-
-- `/role`
-- `/role/:id`
-
-### Brand
-
-- `/brands`
-
-### Category
-
-- `/categories`
-
-### Product
-
-- `/products`
-- `/products/:id`
-
-### Attribute
-
-- `/attributes`
-- `/categories/:categoryId/attributes`
-
-### Search
-
-- `/search/brand`
+- `auth.*`: `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout`, `/auth/me`, `/auth/sendotp`, `/auth/verifyotp`, `/auth/verify-email`, `/auth/forgot-password/*`.
+- `health.check`: `/health-check`.
+- `user.*`: `/user`, `/user/update`, `/user/{id}` (DELETE).
+- `role.*`: `/role`, `/role/{id}` (PATCH/DELETE).
+- `permission.list`: `/permissions`.
+- `brand.*`: `/brands`, `/brands/storefront`, `/brands/storefront/by-slug/{slug}`, `/brands/update/{id}`, `/brands/{id}` (DELETE), `/brands/{id}/image`, `/brands/{id}/images/*`.
+- `category.*`: `/categories`, `/categories/storefront`, `/categories/storefront/tree`, `/categories/tree`, `/categories/{id}`, `/categories/by-slug/{slug}`, `/categories/{id}/move`, `/categories/reorder`, `/categories/merge`, `/categories/{id}/images/*`.
+- `product.*`: `/products`, `/products/storefront`, `/products/storefront/catalog`, `/products/storefront/{id}`, `/products/{id}`, `/products/{id}/status`, `/products/{id}/images/*`.
+- `inventory.*`: `/admin/inventories`, `/admin/inventories/{variantId}`, `/admin/inventories/{variantId}/movements`, `/admin/inventories/{variantId}/adjustments`.
+- `attribute.*`: `/attributes`, `/attributes/{id}` (PATCH/DELETE), `/attribute-options`, `/attribute-options/{id}`, `/categories/{categoryId}/attributes`.
+- `import.*`, `export.*`: `/import/{domain}`, `/export/{domain}` cho 5 domain (brand, category, product, attributes, category-attributes).
+- `cart.*`: `/carts/me`, `/carts/me/items`, `/carts/me/items/{variantId}`, `/carts/me/voucher`, `/carts/me/voucher/apply`, `/carts/me/pricing-preview`, `/carts/me/checkout`.
+- `order.*`: `/orders`, `/orders/{id}`, `/orders/{id}/admin-status`, `/orders/{id}/payment-status`, `/orders/{id}/fulfillment`, `/orders/me`, `/orders/me/{id}`, `/orders/me/{id}/cancel`, `/orders/me/{id}/return-requests`.
+- `payment.*`: `/payments/intents`, `/payments/intents/{id}/{authorize|capture|refund|void}`, `/payments/intents/{id}/momo/simulate`, `/payments/intents/{id}`, `/payments/intents/order/{orderId}`, `/payments/finance/reconcile`.
+- `search.brand`: `/search/brand` (chua co caller; xem ghi chu o api-inventory.md).
 
 ## Nguyen tac mo rong API
 

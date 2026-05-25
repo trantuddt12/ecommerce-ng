@@ -46,13 +46,14 @@ Tai lieu nay thong ke cac API frontend Angular dang su dung thuc te trong projec
 
 ### Auth interceptor note
 
-`refresh-token.interceptor.ts` bo qua auto-refresh cho cac endpoint public/auth sau (`src/app/core/interceptors/refresh-token.interceptor.ts:16-23`):
+`refresh-token.interceptor.ts` bo qua auto-refresh cho cac endpoint public/auth sau (`src/app/core/interceptors/refresh-token.interceptor.ts:16-22`):
 
 - `/auth/refresh`
 - `/auth/login`
+- `/auth/register`
 - `/auth/sendotp`
-- `/auth/sendotpregister`
 - `/auth/verifyotp`
+- `/auth/verify-email`
 - `/auth/logout`
 
 ## Danh sach API dang duoc frontend su dung
@@ -61,15 +62,15 @@ Tai lieu nay thong ke cac API frontend Angular dang su dung thuc te trong projec
 
 | HTTP | Endpoint | Caller | Auth | Request | Response | Ghi chu |
 |---|---|---|---|---|---|---|
-| POST | `/auth/login` | `AuthService.login` (`src/app/core/services/auth.service.ts:33`) | Public | `LoginRequest` | `ApiEnvelope<LoginResponse>` | Sau khi login, frontend luu `accessToken`, map current user, roi goi `/auth/me`. |
-| POST | `/user/register` | `AuthService.register` (`src/app/core/services/auth.service.ts:50`) | Public | `RegisterRequest` | `ApiEnvelope<UserResponse>` | Dang dung endpoint user cho register. |
-| POST | `/auth/sendotpregister` | `AuthService.registerWithOtp` (`src/app/core/services/auth.service.ts:54`) | Public | `RegisterRequest` | `ApiEnvelope<SendOtpResponse>` -> map `data` | Gui OTP cho dang ky. |
-| POST | `/auth/refresh` | `AuthService.refresh` (`src/app/core/services/auth.service.ts:62`) | Public/cookie refresh | `{}` | `ApiEnvelope<LoginResponse>` | Dedupe bang `shareReplay(1)`, sau do goi `/auth/me`. |
-| POST | `/auth/logout` | `AuthService.logout` (`src/app/core/services/auth.service.ts:95`) | Session | `{}` | `Text` | Loi 401/403 van clear session local. |
-| POST | `/auth/sendotp` | `AuthService.sendOtp` (`src/app/core/services/auth.service.ts:108`) | Public | `SendOtpRequest` | `ApiEnvelope<SendOtpResponse>` -> map `data` | OTP login/use case khac. |
-| POST | `/auth/forgot-password/request` | `AuthService.requestForgotPassword` (`src/app/core/services/auth.service.ts:112`) | Public | `{ email }` | `ApiEnvelope<SendOtpResponse>` -> map `data` | Khoi tao reset password. |
-| POST | `/auth/verifyotp` | `AuthService.verifyOtp` (`src/app/core/services/auth.service.ts:116`) | Public | `VerifyOtpRequest` | `ApiEnvelope<VerifyOtpResponse>` -> map `data` | Verify OTP, chua luu session o buoc nay. |
-| POST | `/auth/forgot-password/confirm` | `AuthService.confirmForgotPassword` (`src/app/core/services/auth.service.ts:137`) | Public | `ForgotPasswordConfirmRequest` | `string` | Khong unwrap envelope trong code hien tai. |
+| POST | `/auth/login` | `AuthService.login` (`src/app/core/services/auth.service.ts:34`) | Public | `LoginRequest` (co the chua `googleToken`) | `ApiEnvelope<LoginResponse>` | Sau khi login, frontend luu `accessToken`, map current user, roi goi `/auth/me`. |
+| POST | `/auth/register` | `AuthService.register` (`src/app/core/services/auth.service.ts:51`) | Public | `RegisterRequest` | `ApiEnvelope<UserResponse>` | Tao tai khoan moi. |
+| POST | `/auth/refresh` | `AuthService.refresh` (`src/app/core/services/auth.service.ts:59`) | Public/cookie refresh | `{}` | `ApiEnvelope<LoginResponse>` | Dedupe bang `shareReplay(1)`, sau do goi `/auth/me`. |
+| POST | `/auth/logout` | `AuthService.logout` (`src/app/core/services/auth.service.ts:92`) | Session | `{}` | `Text` | Loi 401/403 van clear session local. |
+| POST | `/auth/sendotp` | `AuthService.sendOtp` (`src/app/core/services/auth.service.ts:105`) | Public | `SendOtpRequest` | `ApiEnvelope<SendOtpResponse>` -> map `data` | OTP login/use case khac. |
+| POST | `/auth/forgot-password/request` | `AuthService.requestForgotPassword` (`src/app/core/services/auth.service.ts:109`) | Public | `{ email }` | `ApiEnvelope<SendOtpResponse>` -> map `data` | Khoi tao reset password. |
+| POST | `/auth/verifyotp` | `AuthService.verifyOtp` (`src/app/core/services/auth.service.ts:113`) | Public | `VerifyOtpRequest` | `ApiEnvelope<VerifyOtpResponse>` -> map `data` | Verify OTP, sau do co the goi `completeOtpLogin` neu purpose = LOGIN. |
+| GET | `/auth/verify-email` | `AuthService.verifyEmail` (`src/app/core/services/auth.service.ts:117`) | Public | query `{ token }` | `ApiEnvelope<EmailVerificationResponse>` -> map `data` | Xac thuc email tu link. |
+| POST | `/auth/forgot-password/confirm` | `AuthService.confirmForgotPassword` (`src/app/core/services/auth.service.ts:138`) | Public | `ForgotPasswordConfirmRequest` | `string` | Tra raw text, khong unwrap envelope. |
 | GET | `/auth/me` | `CurrentUserService.loadCurrentUser` (`src/app/core/services/current-user.service.ts:31`) | Session | none | `BackendUser` hoac `ApiEnvelope<BackendUser>` | 401/403 thi clear session, con loi khac fallback decode JWT local. |
 
 ### 2. Health
@@ -227,7 +228,23 @@ Tai lieu nay thong ke cac API frontend Angular dang su dung thuc te trong projec
 | GET | `/orders/me` | `OrderApiService.listMyOrders` (`src/app/core/services/order-api.service.ts:69`) | Session | query `page`, `size`, `sortBy`, `sortDir` | `PagedApiEnvelope<OrderListItem>` hoac `ApiEnvelope<OrderListItem[]>` | Danh sach order cua user hien tai. |
 | GET | `/orders/me/{id}` | `OrderApiService.getMyOrderById` (`src/app/core/services/order-api.service.ts:75`) | Session | path `id` | `OrderDetail` hoac `ApiEnvelope<OrderDetail>` | Detail order cua user. |
 | PATCH | `/orders/me/{id}/cancel` | `OrderApiService.cancelMyOrder` (`src/app/core/services/order-api.service.ts:81`) | Session | `CustomerOrderCancelRequest` | `OrderDetail` hoac `ApiEnvelope<OrderDetail>` | Huy order. |
-| POST | `/orders/me/{id}/return-requests` | `OrderApiService.requestReturn` (`src/app/core/services/order-api.service.ts:87`) | Session | `CustomerOrderReturnRequest` | `OrderDetail` hoac `ApiEnvelope<OrderDetail>` | Gui yeu cau tra hang. |
+| POST | `/orders/me/{id}/return-requests` | `OrderApiService.requestReturn` (`src/app/core/services/order-api.service.ts:87`) | Session | `CustomerOrderReturnRequest` (alias cua `CustomerOrderCancelRequest`) | `OrderDetail` hoac `ApiEnvelope<OrderDetail>` | Gui yeu cau tra hang. |
+
+### 14. Payments
+
+Tat ca mutation endpoint gan `Idempotency-Key` va `X-Correlation-Id` header tu `PaymentApiService.buildMutationHeaders()` (`src/app/core/services/payment-api.service.ts:114`).
+
+| HTTP | Endpoint | Caller | Auth | Request | Response | Ghi chu |
+|---|---|---|---|---|---|---|
+| POST | `/payments/intents` | `PaymentApiService.createIntent` (`src/app/core/services/payment-api.service.ts:21`) | Session | `CreatePaymentIntentRequest` | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Tao payment intent moi cho order. Frontend normalize `amount`, `*Amount`, `terminal` ve number/boolean. |
+| POST | `/payments/intents/{id}/authorize` | `PaymentApiService.authorize` (`src/app/core/services/payment-api.service.ts:33`) | Session | `PaymentAmountRequest` (optional) | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Authorize (hold fund). |
+| POST | `/payments/intents/{id}/capture` | `PaymentApiService.capture` (`src/app/core/services/payment-api.service.ts:45`) | Session (admin permission backend) | `PaymentAmountRequest` (optional) | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Capture authorized fund. |
+| POST | `/payments/intents/{id}/refund` | `PaymentApiService.refund` (`src/app/core/services/payment-api.service.ts:57`) | Session (admin permission backend) | `PaymentAmountRequest` (optional) | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Refund. |
+| POST | `/payments/intents/{id}/void` | `PaymentApiService.void` (`src/app/core/services/payment-api.service.ts:69`) | Session (admin permission backend) | `{}` | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Void authorization. |
+| POST | `/payments/intents/{id}/momo/simulate` | `PaymentApiService.simulateMomo` (`src/app/core/services/payment-api.service.ts:81`) | Session | `MomoPaymentSimulationRequest` | `MomoPaymentSimulationResponse` hoac `ApiEnvelope<...>` | Sandbox MoMo simulate APPROVE/DECLINE. |
+| GET | `/payments/intents/{id}` | `PaymentApiService.getById` (`src/app/core/services/payment-api.service.ts:93`) | Session | path `id` | `PaymentIntent` hoac `ApiEnvelope<PaymentIntent>` | Lay intent theo id. |
+| GET | `/payments/intents/order/{orderId}` | `PaymentApiService.getByOrderId` (`src/app/core/services/payment-api.service.ts:99`) | Session | path `orderId` | `PaymentIntent | null` hoac `ApiEnvelope<PaymentIntent | null>` | Lay intent theo order; co the null neu chua tao. |
+| POST | `/payments/finance/reconcile` | `PaymentApiService.reconcile` (`src/app/core/services/payment-api.service.ts:105`) | Session (admin permission backend) | `PaymentFinanceReconcileRequest` (optional) | `PaymentFinanceReconcileResult` hoac `ApiEnvelope<...>` | Chay reconcile theo businessDate. |
 
 ## Endpoint constants chua duoc frontend su dung
 
@@ -235,8 +252,7 @@ Nhung endpoint sau da co trong `src/app/core/constants/api-endpoints.ts` nhung c
 
 | Endpoint constant | Path | Ghi chu |
 |---|---|---|
-| `API_ENDPOINTS.search.brand` | `/search/brand` | Chua thay service hoac component goi toi. |
-| `API_ENDPOINTS.export.categoryAttributesImport` | `/export/category-attributes/import` | Da khai bao constant nhung `ImportExportApiService` chua map domain nao toi endpoint nay. |
+| `API_ENDPOINTS.search.brand` | `/search/brand` | Chua thay service hoac component goi toi. Searchservice ES dedicated (port 8082) hien chua duoc FE consume; basecommerce `/products/storefront` (JPA + LIKE + Redis cache) dang dam nhan use case search storefront. |
 
 ## Checklist khi doi API frontend
 

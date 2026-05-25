@@ -2,13 +2,32 @@
 
 ## Route tree hien tai
 
-Nguon chinh: `src/app/app.routes.ts`
+Nguon chinh: `src/app/app.routes.ts`. `''` redirect ve `/home`. `/dashboard` redirect ve `/admin/dashboard`.
+
+### Nhom public (storefront)
+
+Nguon: `src/app/features/public/public.routes.ts`
+
+- `/home` -> `PublicProductsPage`
+- `/home/products` -> redirect ve `/home`
+- `/home/products/:id` -> `PublicProductDetailPage`
+- `/home/category/:categorySlug` -> `PublicProductsPage`
+- `/home/brand/:brandSlug` -> `PublicProductsPage`
+- `/home/dashboard` -> `DashboardPage`
+
+Dac diem:
+
+- Su dung `ClientLayoutComponent`.
+- Khong bao guard, ai cung vao duoc.
 
 ### Nhom auth
 
 - `/auth/login`
 - `/auth/register`
+- `/auth/verify-email`
 - `/auth/verify-otp`
+- `/auth/forgot-password`
+- `/auth/reset-password`
 
 Dac diem:
 
@@ -18,26 +37,34 @@ Dac diem:
 
 ### Nhom admin
 
+Nguon: `src/app/features/admin/admin.routes.ts`
+
 - `/admin/dashboard`
 - `/admin/management/users`
 - `/admin/management/roles`
 - `/admin/catalog/brands`
 - `/admin/catalog/categories`
 - `/admin/catalog/products`
+- `/admin/catalog/inventory`
 - `/admin/catalog/attributes`
 - `/admin/catalog/operations`
 - `/admin/catalog/search`
 - `/admin/orders`
+- `/admin/orders/:id`
 
 Dac diem:
 
 - Su dung `MainLayoutComponent`.
-- Duoc bao boi `authGuard`.
-- Tung route dung `permissionGuard` voi `data.permissions` theo permission backend.
+- Duoc bao boi `authGuard` o cap children.
+- Tung route dung `permissionGuard` voi `data.permissions` theo permission backend (vi du `PRODUCT_VIEW`, `ORDER_VIEW`).
 
 ### Nhom client
 
+Nguon: `src/app/features/client/client.routes.ts`
+
+- `/client/cart`
 - `/client/checkout`
+- `/client/payments/momo/:orderId`
 - `/client/orders/me`
 - `/client/orders/me/:id`
 
@@ -49,27 +76,28 @@ Dac diem:
 
 ### Route he thong
 
-- `/forbidden`
+- `/forbidden` -> `ForbiddenPage`
 - `**` -> `NotFoundPage`
 
 ## Route constants
 
 Nguon: `src/app/core/constants/app-routes.ts`
 
-Da khai bao:
+Da khai bao (string constants):
 
+- `home`, `homeProducts`
+- `login`
 - `dashboard`
-- `users`
-- `roles`
-- `brands`
-- `categories`
-- `products`
-- `attributes`
-- `operations`
-- `search`
-- `checkout`
-- `myOrders`
-- `adminOrders`
+- `users`, `roles`
+- `brands`, `categories`, `products`, `inventory`, `attributes`, `operations`, `search`
+- `cart`, `cartCheckout`
+- `myOrders`, `adminOrders`
+
+Da khai bao (factory functions):
+
+- `storefrontCategory(slug)`, `storefrontBrand(slug)`, `storefrontProductDetail(id)`
+- `momoPayment(orderId)`
+- `myOrderDetail(id)`, `adminOrderDetail(id)`
 
 ## Luu y
 

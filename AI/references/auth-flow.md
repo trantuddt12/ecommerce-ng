@@ -32,13 +32,10 @@ Nguon: `src/app/core/services/auth.service.ts`, `src/app/features/auth/pages/log
 
 Nguon: `src/app/features/auth/pages/register.page.ts`, `src/app/features/auth/pages/verify-otp.page.ts`
 
-1. Public register co 2 nhanh: dang ky truc tiep qua `/user/register` hoac dang ky OTP qua `/auth/sendotpregister`.
-2. Voi dang ky OTP, frontend gui full `RegisterRequest` den `/auth/sendotpregister`.
-3. Backend luu tam request trong Redis va gui OTP qua email.
-4. Frontend dieu huong sang `/auth/verify-otp` kem `email`, `purpose=REGISTER`, va `resendAfterSeconds`.
-5. `VerifyOtpPage` goi `POST /auth/verifyotp` voi body `{ purpose, email, otp }`.
-6. Backend tao user tu du lieu tam va activate account trong cung flow verify thanh cong.
-7. Sau verify, frontend day user ve login de dang nhap binh thuong hoac Google.
+1. Public register goi `POST /auth/register` voi `RegisterRequest`.
+2. Backend tao user trang thai cho xac nhan va gui email verification (link chua `token`).
+3. User mo link `/auth/verify-email?token=...` -> `AuthService.verifyEmail(token)` goi `GET /auth/verify-email` de activate.
+4. Sau verify thanh cong, frontend day user ve `/auth/login` de dang nhap binh thuong hoac Google.
 
 ## Luong khoi tao app
 
