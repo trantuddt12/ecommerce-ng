@@ -4,7 +4,7 @@ export const environment = {
   apiBaseUrl: 'http://localhost:8081',
   searchApiBaseUrl: 'http://localhost:8082',
   googleClientId: '',
-  requestTimeoutMs: 15000,
+  requestTimeoutMs: 1500000,
   defaultLanguage: 'vi',
   enableDebugTools: false,
 };
