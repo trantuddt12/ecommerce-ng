@@ -114,7 +114,7 @@ function toNullableNumber(value: number | null | undefined): QueryParamValue {
 
 export function createProductFormData(request: AdminProductUpsertRequest, files: File[]): FormData {
   const formData = new FormData();
-  formData.append('product', JSON.stringify(request));
+  formData.append('product', new Blob([JSON.stringify(request)], { type: 'application/json' }));
 
   for (const file of files) {
     formData.append('images', file);

@@ -164,7 +164,7 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
                 </div>
               } @else {
                 <div class="order-permission-note">
-                  Ban co quyen xem don, nhung can ORDER_UPDATE hoac ORDER_MANAGE de cap nhat trang thai.
+                  Ban co quyen xem don, nhung can ORDER_UPDATE de cap nhat trang thai.
                 </div>
               }
 
@@ -208,7 +208,7 @@ import { PaymentIntentPanelComponent } from '../payment-intent-panel/payment-int
                   </div>
                 } @else {
                   <div class="order-permission-note">
-                    Can ORDER_UPDATE hoac ORDER_MANAGE de ghi nhan COD da thu tien.
+                    Can ORDER_UPDATE de ghi nhan COD da thu tien.
                   </div>
                 }
               } @else {
@@ -433,7 +433,7 @@ export class AdminOrderDetailPage {
   };
 
   protected readonly canUpdateOrder = computed(() => {
-    return hasAnyPermission(this.authStore.permissions(), ['ORDER_UPDATE', 'ORDER_MANAGE']);
+    return hasAnyPermission(this.authStore.permissions(), ['ORDER_UPDATE']);
   });
 
   protected readonly isCodOrder = computed(() => {

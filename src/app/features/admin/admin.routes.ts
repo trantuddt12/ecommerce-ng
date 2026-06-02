@@ -56,7 +56,7 @@ export const adminRoutes: Routes = [
         path: 'catalog/inventory',
         component: InventoryPage,
         canActivate: [permissionGuard],
-        data: { permissions: ['INVENTORY_VIEW', 'INVENTORY_MANAGE'] },
+        data: { permissions: ['INVENTORY_VIEW', 'INVENTORY_UPDATE'] },
       },
       {
         path: 'catalog/attributes',

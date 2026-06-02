@@ -1636,7 +1636,7 @@ export class ProductsPage {
 
   protected canManageProductStatus(): boolean {
     const permissions = this.authStore.permissions();
-    return permissions.has('PRODUCT_UPDATE') || permissions.has('PRODUCT_MANAGE') || permissions.has('PRODUCT_PUBLISH');
+    return permissions.has('PRODUCT_UPDATE') || permissions.has('PRODUCT_PUBLISH');
   }
 
   protected toggleProductStatus(product: AdminProductListItem): void {

@@ -279,7 +279,7 @@ import { hasAnyPermission } from '../../../core/utils/permission.util';
                 </div>
 
                 @if (!canManage()) {
-                  <div class="inventory-muted">Can permission INVENTORY_MANAGE de dieu chinh ton kho.</div>
+                  <div class="inventory-muted">Can permission INVENTORY_UPDATE de dieu chinh ton kho.</div>
                 }
               </div>
 
@@ -374,7 +374,7 @@ export class InventoryPage {
     note: '',
   };
 
-  protected readonly canManage = computed(() => hasAnyPermission(this.authStore.permissions(), ['INVENTORY_MANAGE']));
+  protected readonly canManage = computed(() => hasAnyPermission(this.authStore.permissions(), ['INVENTORY_UPDATE']));
 
   constructor() {
     this.loadFilterSources();

@@ -84,7 +84,7 @@ export const ADMIN_NAVIGATION_SECTIONS: readonly AdminNavigationSection[] = [
         path: APP_ROUTES.inventory,
         descriptionKey: 'nav.inventoryDescription',
         keywords: ['inventory', 'stock', 'ton kho'],
-        permissions: ['INVENTORY_MANAGE', 'INVENTORY_VIEW'],
+        permissions: ['INVENTORY_UPDATE', 'INVENTORY_VIEW'],
       },
       {
         labelKey: 'nav.attributes',
