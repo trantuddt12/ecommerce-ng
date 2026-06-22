@@ -1,6 +1,6 @@
 import { HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../constants/api-endpoints';
 import { BaseApiService } from '../http/base-api.service';
 import { ApiEnvelope, unwrapApiEnvelope } from '../models/auth.models';
@@ -19,75 +19,99 @@ export class PaymentApiService {
   private readonly baseApi = inject(BaseApiService);
 
   createIntent(request: CreatePaymentIntentRequest): Observable<PaymentIntent> {
+    const opKey = `createIntent:${request.orderId}`;
     return this.baseApi
       .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
         API_ENDPOINTS.payment.intents,
         request,
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   authorize(intentId: string, request?: PaymentAmountRequest | null): Observable<PaymentIntent> {
+    const opKey = `authorize:${intentId}`;
     return this.baseApi
       .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
         API_ENDPOINTS.payment.authorize(intentId),
         request ?? {},
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   capture(intentId: string, request?: PaymentAmountRequest | null): Observable<PaymentIntent> {
+    const opKey = `capture:${intentId}`;
     return this.baseApi
       .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
         API_ENDPOINTS.payment.capture(intentId),
         request ?? {},
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   refund(intentId: string, request?: PaymentAmountRequest | null): Observable<PaymentIntent> {
+    const opKey = `refund:${intentId}`;
     return this.baseApi
       .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
         API_ENDPOINTS.payment.refund(intentId),
         request ?? {},
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   void(intentId: string): Observable<PaymentIntent> {
+    const opKey = `void:${intentId}`;
     return this.baseApi
       .post<PaymentIntent | ApiEnvelope<PaymentIntent>>(
         API_ENDPOINTS.payment.void(intentId),
         {},
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeIntent(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeIntent(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   simulateMomo(intentId: string, request: MomoPaymentSimulationRequest): Observable<MomoPaymentSimulationResponse> {
+    const opKey = `simulateMomo:${intentId}`;
     return this.baseApi
       .post<MomoPaymentSimulationResponse | ApiEnvelope<MomoPaymentSimulationResponse>>(
         API_ENDPOINTS.payment.simulateMomo(intentId),
         request,
         'api',
         undefined,
-        this.buildMutationHeaders(),
+        this.buildMutationHeaders(opKey),
       )
-      .pipe(map((response) => this.normalizeMomoResponse(unwrapApiEnvelope(response))));
+      .pipe(
+        map((response) => this.normalizeMomoResponse(unwrapApiEnvelope(response))),
+        tap(() => this.releaseIdempotencyKey(opKey)),
+      );
   }
 
   getById(intentId: string): Observable<PaymentIntent> {
@@ -111,11 +135,34 @@ export class PaymentApiService {
       .pipe(map((response) => unwrapApiEnvelope(response)));
   }
 
-  private buildMutationHeaders(): HttpHeaders {
+  /**
+   * Idempotency keys keyed by logical operation (e.g. "authorize:<intentId>").
+   * A key is generated once per operation and reused across retries / duplicate
+   * submissions (double-click, network retry) so the backend can dedupe the
+   * request instead of charging twice. The key is released only on success, so
+   * a deliberate follow-up operation (e.g. a second partial refund) gets a fresh
+   * key while a failed/timed-out attempt keeps the same key for safe retry.
+   */
+  private readonly idempotencyKeys = new Map<string, string>();
+
+  private buildMutationHeaders(operationKey: string): HttpHeaders {
     return new HttpHeaders({
-      'Idempotency-Key': this.randomId(),
+      'Idempotency-Key': this.resolveIdempotencyKey(operationKey),
       'X-Correlation-Id': this.randomId(),
     });
+  }
+
+  private resolveIdempotencyKey(operationKey: string): string {
+    let key = this.idempotencyKeys.get(operationKey);
+    if (!key) {
+      key = this.randomId();
+      this.idempotencyKeys.set(operationKey, key);
+    }
+    return key;
+  }
+
+  private releaseIdempotencyKey(operationKey: string): void {
+    this.idempotencyKeys.delete(operationKey);
   }
 
   private randomId(): string {
