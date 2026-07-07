@@ -107,6 +107,8 @@ export const API_ENDPOINTS = {
   },
   search: {
     brand: '/search/brand',
+    products: '/search/products',
+    productSuggest: '/search/products/suggest',
   },
   cart: {
     my: '/carts/me',

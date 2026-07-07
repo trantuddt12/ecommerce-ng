@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,10 +9,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { APP_ROUTES } from '../../core/constants/app-routes';
 import { AppConfig } from '../../core/config/app-config.model';
 import { AdminProductListItem, Brand, Category, CategoryTreeNode } from '../../core/models/catalog.models';
+import { ProductSearchItem, ProductSearchResult, ProductSearchSort, SearchSuggestionItem } from '../../core/models/search.models';
 import { AuthStore } from '../../core/state/auth.store';
 import { APP_CONFIG } from '../../core/tokens/app-config.token';
 import { resolveMediaUrl } from '../../core/utils/media-url.util';
@@ -21,6 +23,7 @@ import { CategoryApiService } from '../../core/services/category-api.service';
 import { ErrorMapperService } from '../../core/services/error-mapper.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProductApiService } from '../../core/services/product-api.service';
+import { SearchApiService } from '../../core/services/search-api.service';
 
 @Component({
   selector: 'app-public-products-page',
@@ -62,7 +65,7 @@ import { ProductApiService } from '../../core/services/product-api.service';
           </article>
           <article class="home-stat-card">
             <span>Đang hiển thị</span>
-            <strong>{{ filteredProducts().length }}</strong>
+            <strong>{{ displayedCount() }}</strong>
           </article>
           <article class="home-stat-card">
             <span>Category</span>
@@ -165,16 +168,60 @@ import { ProductApiService } from '../../core/services/product-api.service';
               </div>
 
               <div class="home-search-grid">
-                <mat-form-field appearance="outline">
-                  <mat-label>Tìm kiếm sản phẩm</mat-label>
-                  <input
-                    matInput
-                    [ngModel]="searchKeyword()"
-                    (ngModelChange)="searchKeyword.set($event)"
-                    placeholder="Nhập tên sản phẩm..."
-                  />
-                </mat-form-field>
+                <div class="home-suggest-anchor">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Tìm kiếm sản phẩm</mat-label>
+                    <input
+                      matInput
+                      [ngModel]="searchKeyword()"
+                      (ngModelChange)="searchKeyword.set($event)"
+                      placeholder="Nhập tên sản phẩm..."
+                      autocomplete="off"
+                      (focus)="onSearchInputFocus()"
+                      (blur)="onSearchInputBlur()"
+                    />
+                  </mat-form-field>
+
+                  @if (suggestOpen() && suggestions().length) {
+                    <div class="home-suggest-panel" role="listbox" aria-label="Gợi ý tìm kiếm">
+                      @for (item of suggestions(); track $index) {
+                        <button
+                          class="home-suggest-item"
+                          type="button"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="pickSuggestion(item)"
+                        >
+                          <mat-icon fontSet="material-symbols-outlined">search</mat-icon>
+                          <span>{{ item.value }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
+
+              @if (searchActive()) {
+                <div class="home-search-toolbar">
+                  <label class="home-sort-label">
+                    Sắp xếp
+                    <select
+                      class="home-sort-select"
+                      [ngModel]="searchSort()"
+                      (ngModelChange)="onSearchSortChange($event)"
+                    >
+                      <option value="relevance">Liên quan nhất</option>
+                      <option value="newest">Mới nhất</option>
+                      <option value="price_asc">Giá tăng dần</option>
+                      <option value="price_desc">Giá giảm dần</option>
+                    </select>
+                  </label>
+                  @if (hasSelectedFacets()) {
+                    <button class="home-clear-button" type="button" (click)="clearFacetSelections()">Xóa lọc thuộc tính</button>
+                  }
+                </div>
+              } @else if (searchDegraded() && normalizedKeyword().length >= 2) {
+                <p class="home-search-degraded">Tìm kiếm nâng cao tạm gián đoạn — đang lọc trên danh sách đã tải sẵn.</p>
+              }
 
               @if (brands().length) {
                 <div class="home-brand-row">
@@ -198,15 +245,128 @@ import { ProductApiService } from '../../core/services/product-api.service';
                   }
                 </div>
               }
+
+              @if (searchActive() && searchFacets().length) {
+                @for (facet of searchFacets(); track facet.code) {
+                  <div class="home-facet-group">
+                    <span class="home-facet-label">{{ facet.label || facet.code }}</span>
+                    <div class="home-brand-row">
+                      @for (bucket of facet.buckets; track bucket.value) {
+                        <button
+                          class="home-brand-chip"
+                          type="button"
+                          [class.active]="isFacetSelected(facet.code, bucket.value)"
+                          (click)="toggleFacetBucket(facet.code, bucket.value)"
+                        >
+                          {{ bucket.label || bucket.value }}<small class="home-facet-count">({{ bucket.count }})</small>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
             </mat-card-content>
           </mat-card>
 
           <section class="home-products-section" aria-labelledby="home-products-heading">
             <div class="home-products-header">
               <h2 id="home-products-heading">Danh sách sản phẩm</h2>
+              @if (searchActive() && searchResult()) {
+                <span class="home-search-total">{{ searchTotal() }} kết quả tìm kiếm</span>
+              }
             </div>
 
-            @if (filteredProducts().length) {
+            @if (searchActive()) {
+              @if (searchLoading() && !searchItems().length) {
+                <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+              }
+
+              @if (searchItems().length) {
+                <div class="home-product-grid">
+                  @for (item of searchItems(); track item.productId) {
+                    <article class="home-product-card">
+                      <div class="home-product-media-shell">
+                        <div
+                          class="home-product-media-button"
+                          role="button"
+                          tabindex="0"
+                          (click)="viewProductDetail(item.productId)"
+                          (keydown)="openProductDetailFromKeyboard($event, item.productId)"
+                        >
+                          <div class="home-product-media">
+                            @if (resolveSearchThumbnail(item); as imageUrl) {
+                              <img [src]="imageUrl" [alt]="searchItemName(item)" />
+                            } @else {
+                              <div class="home-product-placeholder">{{ searchItemInitial(item) }}</div>
+                            }
+
+                            <span class="home-status-chip">{{ item.available === false ? 'Sắp về hàng' : 'Mua ngay' }}</span>
+
+                            @if (item.hasDiscount) {
+                              <span class="home-discount-chip">Đang giảm giá</span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="home-product-meta">
+                        @if (item.brand?.name) {
+                          <div class="home-product-badges">
+                            <span class="home-link-badge">{{ item.brand?.name }}</span>
+                          </div>
+                        }
+                        <div
+                          class="home-product-title-button"
+                          role="button"
+                          tabindex="0"
+                          (click)="viewProductDetail(item.productId)"
+                          (keydown)="openProductDetailFromKeyboard($event, item.productId)"
+                        >
+                          <h3 class="home-product-title" [innerHTML]="searchItemNameHtml(item)"></h3>
+                        </div>
+                        <strong class="home-product-price">{{ searchItemPriceLabel(item) }}</strong>
+                        <div class="home-product-inventory">{{ item.available === false ? 'Hết hàng' : 'Còn hàng' }}</div>
+                      </div>
+
+                      <div class="home-product-actions">
+                        <button mat-button color="primary" type="button" (click)="viewProductDetail(item.productId)">
+                          Xem chi tiết
+                        </button>
+                        <button
+                          mat-stroked-button
+                          type="button"
+                          (click)="addToCartFromSearch(item)"
+                          [disabled]="addingProductId() === item.productId || buyingProductId() === item.productId || item.available === false"
+                        >
+                          {{ addingProductId() === item.productId ? 'Đang thêm...' : 'Thêm vào giỏ' }}
+                        </button>
+                        <button
+                          mat-flat-button
+                          color="primary"
+                          type="button"
+                          (click)="buyNowFromSearch(item)"
+                          [disabled]="buyingProductId() === item.productId || addingProductId() === item.productId || item.available === false"
+                        >
+                          {{ buyingProductId() === item.productId ? 'Đang xử lý...' : 'Mua ngay' }}
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+
+                @if (canLoadMoreSearch()) {
+                  <div class="home-load-more">
+                    <button mat-stroked-button type="button" (click)="loadMoreSearchResults()" [disabled]="searchLoadingMore()">
+                      {{ searchLoadingMore() ? 'Đang tải...' : 'Xem thêm kết quả' }}
+                    </button>
+                  </div>
+                }
+              } @else if (!searchLoading()) {
+                <div class="home-empty">
+                  <p>Không tìm thấy sản phẩm nào cho từ khóa "{{ normalizedKeyword() }}".</p>
+                </div>
+              }
+            } @else if (filteredProducts().length) {
               <div class="home-product-grid">
                 @for (product of featuredProducts(); track product.id) {
                   <article class="home-product-card">
@@ -783,6 +943,135 @@ import { ProductApiService } from '../../core/services/product-api.service';
       margin-top: 16px;
     }
 
+    .home-suggest-anchor {
+      position: relative;
+    }
+
+    .home-suggest-panel {
+      position: absolute;
+      top: calc(100% - 18px);
+      left: 0;
+      right: 0;
+      z-index: 30;
+      display: grid;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #dbe3f3;
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    }
+
+    .home-suggest-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .home-suggest-item:hover {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .home-suggest-item mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #64748b;
+    }
+
+    .home-search-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .home-sort-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .home-sort-select {
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid #dbe3f3;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .home-search-degraded {
+      margin: 8px 0 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 13px;
+    }
+
+    .home-facet-group {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .home-facet-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .home-facet-count {
+      margin-left: 4px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .home-search-total {
+      align-self: center;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .home-discount-chip {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .home-load-more {
+      display: flex;
+      justify-content: center;
+    }
+
+    .home-product-title ::ng-deep em {
+      font-style: normal;
+      background: #fef08a;
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+
     @media (max-width: 960px) {
       .home-layout {
         grid-template-columns: 1fr;
@@ -832,6 +1121,25 @@ export class PublicProductsPage implements OnInit {
   protected readonly selectedBrandId = signal<number | null>(null);
   protected readonly hoveredCategoryId = signal<number | null>(null);
   protected readonly searchKeyword = signal('');
+  protected readonly searchResult = signal<ProductSearchResult | null>(null);
+  protected readonly searchItems = signal<ProductSearchItem[]>([]);
+  protected readonly searchLoading = signal(false);
+  protected readonly searchLoadingMore = signal(false);
+  protected readonly searchDegraded = signal(false);
+  protected readonly searchSort = signal<ProductSearchSort>('relevance');
+  protected readonly searchPage = signal(1);
+  protected readonly selectedFacets = signal<Record<string, string[]>>({});
+  protected readonly suggestions = signal<SearchSuggestionItem[]>([]);
+  protected readonly suggestOpen = signal(false);
+  protected readonly normalizedKeyword = computed(() => this.searchKeyword().trim());
+  protected readonly searchActive = computed(() => this.normalizedKeyword().length >= 2 && !this.searchDegraded());
+  protected readonly searchFacets = computed(() => this.searchResult()?.facets ?? []);
+  protected readonly searchTotal = computed(() => this.searchResult()?.total ?? 0);
+  protected readonly hasSelectedFacets = computed(() => Object.values(this.selectedFacets()).some((values) => values.length > 0));
+  protected readonly canLoadMoreSearch = computed(() => {
+    const result = this.searchResult();
+    return !!result && result.page < result.totalPages;
+  });
   protected readonly activeImageIndexByProductId = signal<Record<number, number>>({});
   protected readonly canAccessAdmin = computed(() => this.authStore.roles().includes('ADMIN')
     || this.authStore.roles().includes('STAFF')
@@ -883,6 +1191,10 @@ export class PublicProductsPage implements OnInit {
   protected readonly resultsDescription = computed(() => {
     const count = this.filteredProducts().length;
     const keyword = this.searchKeyword().trim();
+    if (this.searchActive() && this.searchResult()) {
+      return `Tìm thấy ${this.searchTotal()} sản phẩm cho từ khóa "${keyword}" (tìm kiếm nâng cao).`;
+    }
+
     const selectedBrand = this.selectedBrandId() === null ? null : this.brands().find((brand) => brand.id === this.selectedBrandId());
     if (keyword) {
       return `Có ${count} sản phẩm khớp với từ khóa "${keyword}".`;
@@ -894,17 +1206,42 @@ export class PublicProductsPage implements OnInit {
 
     return `Hiển thị ${count} sản phẩm theo bộ lọc hiện tại.`;
   });
+  protected readonly displayedCount = computed(() => {
+    const result = this.searchResult();
+    if (this.searchActive() && result) {
+      return result.total;
+    }
+
+    return this.filteredProducts().length;
+  });
 
   private readonly productApi = inject(ProductApiService);
   private readonly categoryApi = inject(CategoryApiService);
   private readonly brandApi = inject(BrandApiService);
+  private readonly searchApi = inject(SearchApiService);
   private readonly cartStore = inject(CartStore);
   private readonly notificationService = inject(NotificationService);
   private readonly errorMapper = inject(ErrorMapperService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private searchRunId = 0;
 
-  constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
+  constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
+    toObservable(this.normalizedKeyword).pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(),
+    ).subscribe((keyword) => this.onDebouncedKeyword(keyword));
+
+    toObservable(this.normalizedKeyword).pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((keyword) => keyword.length >= 2
+        ? this.searchApi.suggest(keyword, 8).pipe(catchError(() => of(null)))
+        : of(null)),
+      takeUntilDestroyed(),
+    ).subscribe((result) => this.suggestions.set(result?.items ?? []));
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -987,6 +1324,7 @@ export class PublicProductsPage implements OnInit {
     this.selectedCategoryId.set(null);
     this.selectedBrandId.set(null);
     this.hoveredCategoryId.set(null);
+    this.refreshSearchIfActive();
     void this.router.navigate([APP_ROUTES.homeProducts]);
   }
 
@@ -994,6 +1332,7 @@ export class PublicProductsPage implements OnInit {
     const category = this.categoryById().get(categoryId) || this.categoryTreeById().get(categoryId);
     this.selectedBrandId.set(null);
     this.selectedCategoryId.set(categoryId);
+    this.refreshSearchIfActive();
     if (category?.slug) {
       void this.router.navigate([APP_ROUTES.storefrontCategory(category.slug)]);
     }
@@ -1002,6 +1341,7 @@ export class PublicProductsPage implements OnInit {
   toggleBrand(brandId: number): void {
     if (this.selectedBrandId() === brandId) {
       this.selectedBrandId.set(null);
+      this.refreshSearchIfActive();
       void this.router.navigate([APP_ROUTES.homeProducts]);
       return;
     }
@@ -1009,6 +1349,7 @@ export class PublicProductsPage implements OnInit {
     const brand = this.brands().find((item) => item.id === brandId);
     this.selectedCategoryId.set(null);
     this.selectedBrandId.set(brandId);
+    this.refreshSearchIfActive();
     if (brand?.slug) {
       void this.router.navigate([APP_ROUTES.storefrontBrand(brand.slug)]);
     }
@@ -1021,6 +1362,7 @@ export class PublicProductsPage implements OnInit {
     }
     this.selectedBrandId.set(null);
     this.selectedCategoryId.set(categoryId);
+    this.refreshSearchIfActive();
     void this.router.navigate([APP_ROUTES.storefrontCategory(category.slug)]);
   }
 
@@ -1031,7 +1373,178 @@ export class PublicProductsPage implements OnInit {
     }
     this.selectedCategoryId.set(null);
     this.selectedBrandId.set(brandId);
+    this.refreshSearchIfActive();
     void this.router.navigate([APP_ROUTES.storefrontBrand(brand.slug)]);
+  }
+
+  onSearchInputFocus(): void {
+    this.suggestOpen.set(true);
+  }
+
+  onSearchInputBlur(): void {
+    setTimeout(() => this.suggestOpen.set(false), 150);
+  }
+
+  pickSuggestion(item: SearchSuggestionItem): void {
+    this.suggestOpen.set(false);
+    if (item.productId !== null && item.productId !== undefined) {
+      this.viewProductDetail(item.productId);
+      return;
+    }
+
+    if (item.value) {
+      this.searchKeyword.set(item.value);
+    }
+  }
+
+  onSearchSortChange(sort: string): void {
+    this.searchSort.set(sort as ProductSearchSort);
+    this.runSearch(true);
+  }
+
+  isFacetSelected(code: string, value: string): boolean {
+    return (this.selectedFacets()[code] ?? []).includes(value);
+  }
+
+  toggleFacetBucket(code: string, value: string): void {
+    this.selectedFacets.update((current) => {
+      const values = current[code] ?? [];
+      const next = values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+      const updated = { ...current, [code]: next };
+      if (!next.length) {
+        delete updated[code];
+      }
+
+      return updated;
+    });
+    this.runSearch(true);
+  }
+
+  clearFacetSelections(): void {
+    this.selectedFacets.set({});
+    this.runSearch(true);
+  }
+
+  loadMoreSearchResults(): void {
+    const result = this.searchResult();
+    if (!result || this.searchLoadingMore()) {
+      return;
+    }
+
+    this.searchPage.set(result.page + 1);
+    this.runSearch(false);
+  }
+
+  searchItemName(item: ProductSearchItem): string {
+    return item.name || `Sản phẩm #${item.productId}`;
+  }
+
+  searchItemNameHtml(item: ProductSearchItem): string {
+    return item.highlight?.name?.[0] || this.searchItemName(item);
+  }
+
+  searchItemInitial(item: ProductSearchItem): string {
+    return this.searchItemName(item).trim().charAt(0).toUpperCase() || '#';
+  }
+
+  searchItemPriceLabel(item: ProductSearchItem): string {
+    const price = item.price;
+    if (!price || (price.min === null && price.max === null)) {
+      return 'Liên hệ';
+    }
+
+    const min = price.min ?? price.max;
+    const max = price.max ?? price.min;
+    if (min !== null && max !== null && min !== max) {
+      return `${this.formatCurrency(min)} – ${this.formatCurrency(max)}`;
+    }
+
+    return this.formatCurrency(min);
+  }
+
+  resolveSearchThumbnail(item: ProductSearchItem): string | null {
+    return resolveMediaUrl(item.thumbnailUrl, this.config.apiBaseUrl);
+  }
+
+  addToCartFromSearch(item: ProductSearchItem): void {
+    this.executeCartActionById(item.productId, this.searchItemName(item), 'add');
+  }
+
+  buyNowFromSearch(item: ProductSearchItem): void {
+    this.executeCartActionById(item.productId, this.searchItemName(item), 'buyNow');
+  }
+
+  private onDebouncedKeyword(keyword: string): void {
+    this.searchDegraded.set(false);
+    this.selectedFacets.set({});
+    this.searchPage.set(1);
+    if (keyword.length < 2) {
+      this.searchRunId++;
+      this.searchResult.set(null);
+      this.searchItems.set([]);
+      this.searchLoading.set(false);
+      this.searchLoadingMore.set(false);
+      return;
+    }
+
+    this.runSearch(true);
+  }
+
+  private refreshSearchIfActive(): void {
+    if (this.searchActive()) {
+      this.runSearch(true);
+    }
+  }
+
+  private runSearch(reset: boolean): void {
+    const keyword = this.normalizedKeyword();
+    if (keyword.length < 2) {
+      return;
+    }
+
+    if (reset) {
+      this.searchPage.set(1);
+      this.searchLoading.set(true);
+    } else {
+      this.searchLoadingMore.set(true);
+    }
+
+    const runId = ++this.searchRunId;
+    const brandId = this.selectedBrandId();
+    this.searchApi.searchProducts({
+      q: keyword,
+      categoryId: this.selectedCategoryId(),
+      brandIds: brandId === null ? null : [brandId],
+      sort: this.searchSort(),
+      page: this.searchPage(),
+      size: 24,
+      attributes: this.selectedFacets(),
+    }).pipe(
+      finalize(() => {
+        if (runId === this.searchRunId) {
+          this.searchLoading.set(false);
+          this.searchLoadingMore.set(false);
+        }
+      }),
+    ).subscribe({
+      next: (result) => {
+        if (runId !== this.searchRunId) {
+          return;
+        }
+
+        this.searchResult.set(result);
+        this.searchItems.set(reset ? result.items : [...this.searchItems(), ...result.items]);
+      },
+      error: () => {
+        if (runId !== this.searchRunId) {
+          return;
+        }
+
+        this.searchDegraded.set(true);
+        this.searchResult.set(null);
+        this.searchItems.set([]);
+      },
+    });
   }
 
   viewProductDetail(productId: number): void {
@@ -1237,6 +1750,10 @@ export class PublicProductsPage implements OnInit {
   }
 
   private executeCartAction(product: AdminProductListItem, action: 'add' | 'buyNow'): void {
+    this.executeCartActionById(product.id, this.productDisplayName(product), action);
+  }
+
+  private executeCartActionById(productId: number, displayName: string, action: 'add' | 'buyNow'): void {
     if (!this.authStore.isAuthenticated()) {
       this.notificationService.info('Vui lòng đăng nhập để mua và thêm sản phẩm vào giỏ hàng.');
       void this.router.navigate([APP_ROUTES.login]);
@@ -1244,12 +1761,12 @@ export class PublicProductsPage implements OnInit {
     }
 
     if (action === 'add') {
-      this.addingProductId.set(product.id);
+      this.addingProductId.set(productId);
     } else {
-      this.buyingProductId.set(product.id);
+      this.buyingProductId.set(productId);
     }
 
-    this.productApi.getStorefrontById(product.id).pipe(
+    this.productApi.getStorefrontById(productId).pipe(
       finalize(() => {
         if (action === 'add') {
           this.addingProductId.set(null);
@@ -1268,7 +1785,7 @@ export class PublicProductsPage implements OnInit {
         this.cartStore.upsertItem({ variantId: variant.id, quantity: 1 }).subscribe({
           next: () => {
             if (action === 'add') {
-              this.notificationService.success(`Đã thêm ${this.productDisplayName(product)} vào giỏ hàng.`);
+              this.notificationService.success(`Đã thêm ${displayName} vào giỏ hàng.`);
               return;
             }
             void this.router.navigate([APP_ROUTES.cartCheckout]);
