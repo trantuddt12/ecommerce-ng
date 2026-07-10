@@ -77,7 +77,7 @@ Luu y quan trong cho frontend:
 - neu backend chay local qua HTTP va `secure=true`, refresh cookie co the khong hoat dong nhu mong doi tren moi truong local
 - profile `application-local.yaml` hien da override `security.cookies.secure=false` de login va refresh flow hoat dong tren `http://localhost`
 - profile `application-local.yaml` hien cung override `spring.mail` ve `localhost:1025` de OTP/verification email di vao `Mailpit` local thay vi Mailtrap hay email that
-- de test OTP local, chay `docker compose -f basecommerce/src/main/resources/docker-mailpit/docker-compose.yml up -d` va mo `http://localhost:8025`
+- de test OTP local, chay `docker compose -f ../docker-ecommerce/docker-compose.yml up -d mailpit` va mo `http://localhost:8025`
 - frontend bat buoc gui request voi `withCredentials: true`
 
 ## 4.3 Public endpoints
