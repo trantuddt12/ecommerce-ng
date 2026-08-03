@@ -108,7 +108,12 @@ export const API_ENDPOINTS = {
   search: {
     brand: '/search/brand',
     products: '/search/products',
+    productsSmart: '/search/products/smart',
+    productsFuzzy: '/search/products/fuzzy',
+    productsPhrasePrefix: '/search/products/phrase-prefix',
+    productsWildcard: '/search/products/wildcard',
     productSuggest: '/search/products/suggest',
+    health: '/search/health',
   },
   cart: {
     my: '/carts/me',

@@ -3,6 +3,16 @@
 
 export type ProductSearchSort = 'relevance' | 'newest' | 'price_asc' | 'price_desc';
 
+/**
+ * Che do match keyword, tuong ung cac endpoint bien the cua searchservice:
+ * - standard      -> GET /search/products         (best_fields)
+ * - smart         -> GET /search/products/smart    (best_fields + fuzziness + as-you-type)
+ * - fuzzy         -> GET /search/products/fuzzy    (fuzziness AUTO)
+ * - phrase_prefix -> GET /search/products/phrase-prefix
+ * - wildcard      -> GET /search/products/wildcard (cham, *q*)
+ */
+export type ProductSearchMode = 'standard' | 'smart' | 'fuzzy' | 'phrase_prefix' | 'wildcard';
+
 export interface ProductSearchBrandSummary {
   id: number | null;
   name: string | null;
@@ -80,4 +90,48 @@ export interface SearchSuggestionItem {
 export interface SearchSuggestionResult {
   query: string | null;
   items: SearchSuggestionItem[];
+}
+
+/**
+ * GET /search/brand tra ve JSON THO cua Elasticsearch `_search` (kieu String o backend),
+ * KHONG map sang DTO gon. FE tu doc `hits.hits[]._source`.
+ */
+export interface BrandSearchQuery {
+  keyword: string;
+  /** ES offset, 0-based (khong phai so trang). Backend @Min(0). */
+  from?: number;
+  /** Backend @Min(1) @Max(100). */
+  size?: number;
+}
+
+export interface BrandSearchHitSource {
+  id?: number | string | null;
+  name?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  [key: string]: unknown;
+}
+
+export interface BrandSearchHit {
+  _id?: string;
+  _score?: number | null;
+  _source?: BrandSearchHitSource;
+}
+
+export interface BrandSearchResult {
+  took?: number;
+  timed_out?: boolean;
+  hits?: {
+    total?: { value?: number; relation?: string } | number;
+    max_score?: number | null;
+    hits?: BrandSearchHit[];
+  };
+  [key: string]: unknown;
+}
+
+/** GET /search/health — trang thai engine + alias index. */
+export interface SearchHealthResult {
+  engineReachable: boolean;
+  readAliasExists: boolean;
+  writeAliasExists: boolean;
 }
