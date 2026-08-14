@@ -12,7 +12,6 @@ import { APP_CONFIG } from '../../../core/tokens/app-config.token';
 import { AppConfig } from '../../../core/config/app-config.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ErrorMapperService } from '../../../core/services/error-mapper.service';
-import { KeycloakAuthService } from '../../../core/services/keycloak-auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PostLoginRouteService } from '../../../core/services/post-login-route.service';
 import { APP_ROUTES } from '../../../core/constants/app-routes';
@@ -116,18 +115,6 @@ declare global {
                 <button mat-flat-button color="primary" type="submit" [disabled]="otpLoginForm.invalid">Gui OTP dang nhap</button>
               </div>
             </form>
-          }
-
-          @if (showKeycloakLogin()) {
-            <div class="social-login-block">
-              <p class="auth-helper auth-helper--centered">Hoac dang nhap bang tai khoan Keycloak</p>
-              <div class="auth-actions auth-actions--primary-only">
-                <button mat-stroked-button color="primary" type="button" (click)="loginWithKeycloak()">
-                  <mat-icon>vpn_key</mat-icon>
-                  Dang nhap voi Keycloak
-                </button>
-              </div>
-            </div>
           }
 
           @if (showGoogleLogin()) {
@@ -314,7 +301,6 @@ export class LoginPage implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly ngZone = inject(NgZone);
   private readonly postLoginRouteService = inject(PostLoginRouteService);
-  private readonly keycloakAuthService = inject(KeycloakAuthService);
   private googleScript?: HTMLScriptElement;
 
   protected readonly loginMode = signal<'password' | 'otp'>('password');
@@ -337,19 +323,6 @@ export class LoginPage implements AfterViewInit, OnDestroy {
 
   protected showGoogleLogin(): boolean {
     return Boolean(this.config.googleClientId);
-  }
-
-  protected showKeycloakLogin(): boolean {
-    return this.keycloakAuthService.isEnabled();
-  }
-
-  /** Leaves the SPA entirely: the browser is redirected to the Keycloak login page. */
-  protected loginWithKeycloak(): void {
-    // No return URL on purpose: roles are still unknown here, so the callback resolves the
-    // landing route after the profile has loaded.
-    this.keycloakAuthService.beginLogin().catch((error: unknown) => {
-      this.notifications.error(error instanceof Error ? error.message : 'Khong the bat dau dang nhap Keycloak.');
-    });
   }
 
   ngAfterViewInit(): void {

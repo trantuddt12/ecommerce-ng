@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { guestGuard } from './core/guards/guest.guard';
 import { AuthLayoutComponent } from './core/layout/auth-layout.component';
 import { ForgotPasswordPage } from './features/auth/pages/forgot-password.page';
-import { KeycloakCallbackPage } from './features/auth/pages/keycloak-callback.page';
 import { LoginPage } from './features/auth/pages/login.page';
 import { RegisterPage } from './features/auth/pages/register.page';
 import { ResetPasswordPage } from './features/auth/pages/reset-password.page';
@@ -27,10 +26,6 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     children: [
       { path: 'login', component: LoginPage },
-      // Redirect target registered on the Keycloak `ecommerce-ng` client. Sits under the
-      // guest-guarded branch on purpose: the session is still empty when Keycloak sends the
-      // browser back here.
-      { path: 'keycloak/callback', component: KeycloakCallbackPage },
       { path: 'register', component: RegisterPage },
       { path: 'verify-email', component: VerifyEmailPage },
       { path: 'verify-otp', component: VerifyOtpPage },
