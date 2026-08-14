@@ -18,6 +18,7 @@ import {
 } from '../models/auth.models';
 import { AuthStore } from '../state/auth.store';
 import { CurrentUserService } from './current-user.service';
+import { KeycloakAuthService } from './keycloak-auth.service';
 import { SessionService } from './session.service';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly currentUserService: CurrentUserService,
     private readonly authStore: AuthStore,
+    private readonly keycloakAuthService: KeycloakAuthService,
   ) {}
 
   login(payload: LoginRequest) {
@@ -90,6 +92,10 @@ export class AuthService {
   }
 
   logout() {
+    // Captured before clearSession() wipes them.
+    const provider = this.sessionService.getAuthProvider();
+    const keycloakIdToken = this.sessionService.getKeycloakIdToken();
+
     return this.api.postText(API_ENDPOINTS.auth.logout, {}).pipe(
       catchError((error) => {
         if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
@@ -98,7 +104,14 @@ export class AuthService {
         return of(void 0);
       }),
       map(() => void 0),
-      tap(() => this.sessionService.clearSession()),
+      tap(() => {
+        this.sessionService.clearSession();
+        if (provider === 'keycloak') {
+          // Also end the SSO session at the realm. Skipping this leaves the Keycloak cookie in
+          // place, so the next login re-authenticates silently and logout looks like a no-op.
+          this.keycloakAuthService.endSession(keycloakIdToken);
+        }
+      }),
     );
   }
 
