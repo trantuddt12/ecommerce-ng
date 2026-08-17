@@ -35,7 +35,10 @@ export interface PaymentIntent {
   providerAuthCode: string | null;
   providerErrorCode: string | null;
   providerErrorMessage: string | null;
+  /** No further state change is possible. CAPTURED is NOT terminal — see `paid`. */
   terminal: boolean;
+  /** Funds have been taken from the customer (CAPTURED or SETTLED). */
+  paid: boolean;
   createdAt: string | null;
   updatedAt: string | null;
 }

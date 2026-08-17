@@ -182,6 +182,7 @@ export class PaymentApiService {
       refundedAmount: intent.refundedAmount === null || intent.refundedAmount === undefined ? null : Number(intent.refundedAmount),
       refundableAmount: intent.refundableAmount === null || intent.refundableAmount === undefined ? null : Number(intent.refundableAmount),
       terminal: !!intent.terminal,
+      paid: !!intent.paid,
     };
   }
 

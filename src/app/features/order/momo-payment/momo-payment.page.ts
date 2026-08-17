@@ -399,7 +399,7 @@ export class MomoPaymentPage implements OnInit {
     this.stopPolling();
     this.pollingTimedOut.set(false);
 
-    if (this.intent()?.terminal) {
+    if (this.isSettledOrPaid(this.intent())) {
       this.handleTerminalIntent(redirectOnTerminal);
       return;
     }
@@ -409,7 +409,10 @@ export class MomoPaymentPage implements OnInit {
     this.pollingSub = pollUntil(() => this.paymentApi.getById(intentId), {
       intervalMs: 3000,
       timeoutMs: 90000,
-      shouldStop: (intent) => intent.terminal,
+      // `paid` matters as much as `terminal`: a captured payment is final for the
+      // customer but NOT terminal for the intent (SETTLED / refund / chargeback can
+      // still follow), so stopping on `terminal` alone would poll until it times out.
+      shouldStop: (intent) => intent.paid || intent.terminal,
       onError: () => 'continue',
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -431,10 +434,14 @@ export class MomoPaymentPage implements OnInit {
       });
   }
 
+  private isSettledOrPaid(intent: PaymentIntent | null): boolean {
+    return !!intent && (intent.paid || intent.terminal);
+  }
+
   private handleTerminalIntent(redirectOnTerminal: boolean): void {
     const currentIntent = this.intent();
     if (!currentIntent) return;
-    if (currentIntent.status === 'CAPTURED' || currentIntent.status === 'SETTLED') {
+    if (currentIntent.paid) {
       this.notifications.success('Thanh toan thanh cong.');
       if (redirectOnTerminal) {
         const orderId = currentIntent.orderId ?? this.order()?.id;
@@ -461,7 +468,7 @@ export class MomoPaymentPage implements OnInit {
 
   protected paymentStateLabel(): string {
     const status = this.intent()?.status;
-    if (status === 'CAPTURED' || status === 'SETTLED') {
+    if (this.intent()?.paid) {
       return 'Da thanh toan';
     }
     if (status === 'FAILED') {
@@ -475,7 +482,7 @@ export class MomoPaymentPage implements OnInit {
       next: (intent) => {
         if (intent) {
           this.intent.set(intent);
-          if (!intent.terminal && intent.status !== 'CREATED') {
+          if (!this.isSettledOrPaid(intent) && intent.status !== 'CREATED') {
             this.startIntentPolling(intent.id, false);
           }
           return;

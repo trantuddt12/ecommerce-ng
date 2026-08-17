@@ -86,6 +86,7 @@ import { CreatePaymentIntentRequest, PaymentIntent, PaymentStatus } from '../../
             <div><strong>Refundable:</strong> {{ formatMoney(currentIntent.refundableAmount, currentIntent.currencyCode) }}</div>
             <div><strong>Txn ref:</strong> {{ currentIntent.providerTxnRef || '-' }}</div>
             <div><strong>Auth code:</strong> {{ currentIntent.providerAuthCode || '-' }}</div>
+            <div><strong>Paid:</strong> {{ currentIntent.paid ? 'Yes' : 'No' }}</div>
             <div><strong>Terminal:</strong> {{ currentIntent.terminal ? 'Yes' : 'No' }}</div>
           </div>
         }
