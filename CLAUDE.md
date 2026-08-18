@@ -33,6 +33,11 @@ Located under `.claude/skills/`:
 Located under `.claude/agents/`:
 - `frontend-architect`, `angular-implementer`, `code-reviewer`
 
+## Issue tracking
+
+Phát hiện issue thì tạo file task trong `../task/` ngay lúc đó, theo template ở `../task/README.md`,
+và thêm dòng vào `../task/INDEX.md`. Một issue một file. Không chờ tới lúc sửa mới ghi.
+
 ## Progress log
 
 Append daily work to workspace-level `../AI_PROGRESS/<YYYY-MM-DD>.md`. Do not write to legacy per-project `AI_PROGRESS.md` here.
