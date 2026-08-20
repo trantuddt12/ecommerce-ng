@@ -68,6 +68,10 @@ const TRANSLATIONS = {
     'nav.orderSectionDescription': 'Theo dõi và xử lý đơn hàng.',
     'nav.adminOrders': 'Admin Orders',
     'nav.adminOrdersDescription': 'Xử lý danh sách đơn, trạng thái giao và thanh toán.',
+    'nav.systemSection': 'Hệ thống',
+    'nav.systemSectionDescription': 'Cấu hình runtime và các cờ bật/tắt hành vi.',
+    'nav.systemSettings': 'System settings',
+    'nav.systemSettingsDescription': 'Bật/tắt các cờ hệ thống lưu trong database.',
   },
   en: {
     'common.language': 'Language',
@@ -127,6 +131,10 @@ const TRANSLATIONS = {
     'nav.orderSectionDescription': 'Track and process orders.',
     'nav.adminOrders': 'Admin Orders',
     'nav.adminOrdersDescription': 'Process order lists, delivery status, and payments.',
+    'nav.systemSection': 'System',
+    'nav.systemSectionDescription': 'Runtime configuration and behaviour flags.',
+    'nav.systemSettings': 'System settings',
+    'nav.systemSettingsDescription': 'Turn database-backed system flags on and off.',
   },
 } as const;
 

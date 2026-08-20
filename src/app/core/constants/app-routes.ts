@@ -20,6 +20,7 @@ export const APP_ROUTES = {
   login: '/auth/login',
   myOrders: '/client/orders/me',
   myOrderDetail: (id: string | number) => `/client/orders/me/${id}`,
+  systemSettings: '/admin/system/settings',
   adminOrders: '/admin/orders',
   adminOrderDetail: (id: string | number) => `/admin/orders/${id}`,
 } as const;

@@ -14,6 +14,7 @@ import { AdminOrderDetailPage } from '../order/admin-order-detail/admin-order-de
 import { AdminOrdersPage } from '../order/admin-orders/admin-orders.page';
 import { InventoryPage } from '../catalog/inventory/inventory.page';
 import { SearchPage } from '../search/search.page';
+import { SystemSettingsPage } from '../system/settings/system-settings.page';
 
 export const adminRoutes: Routes = [
   {
@@ -99,6 +100,12 @@ export const adminRoutes: Routes = [
         component: AdminOrderDetailPage,
         canActivate: [permissionGuard],
         data: { permissions: ['ORDER_VIEW'] },
+      },
+      {
+        path: 'system/settings',
+        component: SystemSettingsPage,
+        canActivate: [permissionGuard],
+        data: { permissions: ['SYSTEM_CONFIG'] },
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

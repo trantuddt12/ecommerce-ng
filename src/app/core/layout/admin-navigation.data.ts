@@ -115,4 +115,17 @@ export const ADMIN_NAVIGATION_SECTIONS: readonly AdminNavigationSection[] = [
       },
     ],
   },
+  {
+    labelKey: 'nav.systemSection',
+    descriptionKey: 'nav.systemSectionDescription',
+    items: [
+      {
+        labelKey: 'nav.systemSettings',
+        path: APP_ROUTES.systemSettings,
+        descriptionKey: 'nav.systemSettingsDescription',
+        keywords: ['system', 'settings', 'cau hinh', 'co he thong', 'flag', 'toggle'],
+        permissions: ['SYSTEM_CONFIG'],
+      },
+    ],
+  },
 ] as const;

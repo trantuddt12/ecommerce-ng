@@ -29,6 +29,10 @@ export const API_ENDPOINTS = {
   permission: {
     list: '/permissions',
   },
+  systemSetting: {
+    list: '/system/settings',
+    update: (key: string) => `/system/settings/${encodeURIComponent(key)}`,
+  },
   brand: {
     list: '/brands',
     storefront: '/brands/storefront',
