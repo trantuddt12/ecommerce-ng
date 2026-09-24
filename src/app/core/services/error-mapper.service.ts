@@ -14,6 +14,11 @@ interface BackendErrorPayload {
 @Injectable({ providedIn: 'root' })
 export class ErrorMapperService {
   map(error: unknown): AppError {
+    // errorMappingInterceptor da map va rethrow AppError; page goi map lan nua thi tra nguyen.
+    if (this.isAppError(error)) {
+      return error;
+    }
+
     if (!(error instanceof HttpErrorResponse)) {
       return {
         type: 'unknown',
@@ -52,6 +57,16 @@ export class ErrorMapperService {
       remainingAttempts: typeof payload === 'string' ? undefined : payload?.remainingAttempts,
       originalError: error,
     };
+  }
+
+  private isAppError(error: unknown): error is AppError {
+    if (typeof error !== 'object' || error === null || error instanceof HttpErrorResponse) {
+      return false;
+    }
+    const candidate = error as Partial<AppError>;
+    return typeof candidate.type === 'string'
+      && typeof candidate.statusCode === 'number'
+      && typeof candidate.message === 'string';
   }
 
   private resolveType(status: number): AppError['type'] {

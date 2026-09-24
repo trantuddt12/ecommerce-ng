@@ -27,6 +27,11 @@ export class NotificationService {
   }
 
   private push(level: NotificationItem['level'], message: string): void {
+    // Interceptor va page cung toast mot loi; bo qua neu toast y het dang hien.
+    if (this.notifications().some((item) => item.level === level && item.message === message)) {
+      return;
+    }
+
     const id = Date.now() + Math.floor(Math.random() * 1000);
     this.notifications.update((items) => [...items, { id, level, message }]);
 
