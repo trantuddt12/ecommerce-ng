@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Crush (công cụ AI cũ, không dùng nữa)
+.crush/
